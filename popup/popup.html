@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Bloqueador de Vídeos de IA</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="../icons/icon.svg" alt="" width="28" height="28">
+    <h1>Bloqueador de IA</h1>
+    <label class="switch" title="Ativar ou desativar">
+      <input type="checkbox" id="enabled">
+      <span></span>
+    </label>
+  </header>
+
+  <p class="stats">Itens bloqueados até agora: <b id="total">0</b></p>
+
+  <section>
+    <label class="row">
+      Ao detectar
+      <select id="mode">
+        <option value="hide">Ocultar o vídeo</option>
+        <option value="blur">Desfocar com aviso</option>
+      </select>
+    </label>
+    <label class="check"><input type="checkbox" id="useOfficialLabel"> Usar o rótulo oficial do YouTube ("Criado com IA")</label>
+    <label class="check"><input type="checkbox" id="checkLabelInFeeds"> Conferir o rótulo também nas miniaturas (consulta o YouTube vídeo a vídeo)</label>
+    <label class="check"><input type="checkbox" id="strictMode"> Modo rigoroso: bloquear títulos com "AI" ou "IA" soltos (inclui vídeos que só falam sobre IA)</label>
+    <label class="check"><input type="checkbox" id="autoBlockChannels"> Bloquear automaticamente o canal de vídeos com esse rótulo</label>
+    <label class="check"><input type="checkbox" id="blockWatchPage"> Mostrar tela de bloqueio ao abrir um vídeo ou Short de IA</label>
+  </section>
+
+  <section>
+    <button id="blockCurrent" class="wide">Bloquear o canal do vídeo aberto</button>
+    <p id="msg" class="msg"></p>
+  </section>
+
+  <details open>
+    <summary>Palavras-chave (uma por linha)</summary>
+    <textarea id="keywords" rows="7" spellcheck="false"></textarea>
+  </details>
+
+  <details>
+    <summary>Canais bloqueados (<span id="nBlocked">0</span>)</summary>
+    <textarea id="blockedChannels" rows="6" spellcheck="false" placeholder="@handle ou nome do canal"></textarea>
+  </details>
+
+  <details>
+    <summary>Canais sempre permitidos</summary>
+    <textarea id="allowedChannels" rows="4" spellcheck="false" placeholder="@handle ou nome do canal"></textarea>
+  </details>
+
+  <footer>
+    <button id="save" class="primary">Salvar</button>
+    <button id="reset">Restaurar padrão</button>
+  </footer>
+
+  <script src="../src/defaults.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

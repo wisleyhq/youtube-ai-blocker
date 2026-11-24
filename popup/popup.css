@@ -1,0 +1,133 @@
+* { box-sizing: border-box; }
+
+body {
+  width: 360px;
+  margin: 0;
+  padding: 14px;
+  font: 13px/1.4 system-ui, Roboto, Arial, sans-serif;
+  color: #1a1a1a;
+  background: #fafafa;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 16px;
+}
+
+.stats {
+  margin: 8px 0 12px;
+  color: #555;
+}
+
+section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.check input { margin-top: 2px; }
+
+details {
+  margin-bottom: 10px;
+}
+
+summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  font: 12px/1.4 ui-monospace, Consolas, monospace;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+select, button {
+  font: inherit;
+}
+
+button {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+}
+
+button:hover { background: #f0f0f0; }
+
+button.primary {
+  background: #e62117;
+  border-color: #e62117;
+  color: #fff;
+}
+
+button.primary:hover { background: #c81b12; }
+
+button.wide { width: 100%; }
+
+footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.msg {
+  margin: 0;
+  min-height: 1em;
+  font-size: 12px;
+  color: #2e7d32;
+}
+
+.msg.err { color: #c62828; }
+
+/* interruptor */
+.switch { position: relative; width: 40px; height: 22px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch span {
+  position: absolute; inset: 0;
+  border-radius: 22px;
+  background: #bbb;
+  transition: background .2s;
+  cursor: pointer;
+}
+.switch span::before {
+  content: "";
+  position: absolute;
+  left: 3px; top: 3px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform .2s;
+}
+.switch input:checked + span { background: #e62117; }
+.switch input:checked + span::before { transform: translateX(18px); }
