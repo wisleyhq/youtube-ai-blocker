@@ -1,4 +1,5 @@
-# Recebe contribuições para a lista compartilhada (lists/ai-list.json).
+# Recebe contribuições para a lista compartilhada (lists/ai-list.json na
+# branch "lista", separada do código para a branch main não receber commits do robô).
 #
 # A extensão abre uma issue com o título "[lista] ..." e os IDs dos vídeos num
 # bloco ```aib-ids```. Este robô confere cada vídeo no YouTube e só adiciona os
@@ -27,7 +28,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      # código (script e regras de detecção) da branch main
       - uses: actions/checkout@v4
+
+      # dados: a lista fica na branch "lista"
+      - uses: actions/checkout@v4
+        with:
+          ref: lista
+          path: dados
 
       - uses: actions/setup-node@v4
         with:
@@ -37,19 +45,21 @@ jobs:
         id: verify
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
+          AIB_LIST_FILE: dados/lists/ai-list.json
         run: node scripts/verify-list.mjs
 
       - name: Salvar a lista
         if: steps.verify.outputs.added != '0'
         env:
           NUM: ${{ github.event.issue.number }}
+        working-directory: dados
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add lists/ai-list.json
           git commit -m "Lista compartilhada: contribuição da issue #${NUM}"
-          git pull --rebase
-          git push
+          git pull --rebase origin lista
+          git push origin HEAD:lista
 
       - name: Responder e fechar a issue
         env:

@@ -34,7 +34,7 @@ const AIB_HISTORY_MAX = 1000;
 // eslint-disable-next-line no-unused-vars
 const AIB_REPO_URL = "https://github.com/wisleyhq/youtube-ai-blocker";
 // eslint-disable-next-line no-unused-vars
-const AIB_SHARED_LIST_URL = "https://raw.githubusercontent.com/wisleyhq/youtube-ai-blocker/main/lists/ai-list.json";
+const AIB_SHARED_LIST_URL = "https://raw.githubusercontent.com/wisleyhq/youtube-ai-blocker/lista/lists/ai-list.json";
 // eslint-disable-next-line no-unused-vars
 const AIB_SHARED_REFRESH_MS = 12 * 60 * 60 * 1000; // baixa de novo a cada 12 h
 // eslint-disable-next-line no-unused-vars

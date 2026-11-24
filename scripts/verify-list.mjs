@@ -1,5 +1,5 @@
 // Confere no YouTube os vídeos enviados para a lista compartilhada e adiciona
-// à lists/ai-list.json só os que têm o selo oficial "Criado com IA".
+// à lists/ai-list.json (branch "lista") só os que têm o selo oficial "Criado com IA".
 //
 // Uso:
 //   ISSUE_BODY="..." node scripts/verify-list.mjs     (GitHub Actions)
@@ -9,13 +9,14 @@
 // "added", "checked" e "failed" em $GITHUB_OUTPUT.
 // Não usa dependências: só Node 20+.
 
-import { readFileSync, writeFileSync, appendFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import vm from "node:vm";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const LIST_FILE = join(ROOT, "lists", "ai-list.json");
+// No GitHub Actions a lista vem da branch "lista" (AIB_LIST_FILE aponta para ela)
+const LIST_FILE = process.env.AIB_LIST_FILE || join(ROOT, "lists", "ai-list.json");
 const MAX_IDS = 500;
 const ID_RE = /^[A-Za-z0-9_-]{11}$/;
 
@@ -86,6 +87,7 @@ async function checkVideo(id) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function loadList() {
+  mkdirSync(dirname(LIST_FILE), { recursive: true });
   if (!existsSync(LIST_FILE)) return { version: 1, updated: null, channels: {} };
   return JSON.parse(readFileSync(LIST_FILE, "utf8"));
 }

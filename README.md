@@ -31,7 +31,7 @@ Quando um canal publica **mais de 10 vídeos diferentes** com o selo "Criado com
 
 ## Lista compartilhada da comunidade
 
-Todos que usam a extensão podem ajudar a montar uma lista única de vídeos e canais de IA, guardada neste repositório em [`lists/ai-list.json`](lists/ai-list.json).
+Todos que usam a extensão podem ajudar a montar uma lista única de vídeos e canais de IA, guardada neste repositório na branch [`lista`](https://github.com/wisleyhq/youtube-ai-blocker/blob/lista/lists/ai-list.json), separada do código.
 
 - **Receber:** a extensão baixa a lista do GitHub a cada 12 horas. Vídeos da lista são bloqueados na hora, e canais com mais de 10 vídeos nela são bloqueados para todos.
 - **Contribuir:** na página de listas, aba **Compartilhar**, clique em **"Enviar para a lista compartilhada"**. Abre o GitHub com uma mensagem pronta, e você só confirma (é preciso ter uma conta no GitHub, gratuita).

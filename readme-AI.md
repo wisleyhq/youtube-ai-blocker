@@ -19,9 +19,9 @@ Contexto técnico para quem for alterar este código. O [README.md](README.md) �
 | `src/defaults.js` | `AIB_DEFAULTS` (configurações), `AIB_HISTORY_MAX`, `AIB_LABEL_HELP_IDS`, `AIB_LABEL_PHRASES`. Compartilhado entre o content script e as páginas |
 | `src/content.js` | Toda a detecção e o bloqueio (IIFE única) |
 | `src/background.js` | Script de fundo (`background.scripts`): baixa a lista compartilhada. Fica fora do content script porque, no Firefox, o `fetch` feito de dentro da página do YouTube não completava |
-| `lists/ai-list.json` | Lista compartilhada: `{version, updated, channels: {"@handle": {name, videos: [ids]}}}`. Só o robô deve gravar nela |
+| `lists/ai-list.json` **na branch `lista`** | Lista compartilhada: `{version, updated, channels: {"@handle": {name, videos: [ids]}}}`. Só o robô grava nela. Fica numa branch só de dados para a `main` não receber commits do robô (assim ninguém precisa dar `pull` por causa da lista). Não existe na `main` |
 | `scripts/verify-list.mjs` | Script do robô (Node 20, sem dependências). Lê IDs do bloco `aib-ids` da issue (env `ISSUE_BODY`) ou de argumentos, confere o selo de cada um e grava a lista e `resultado.md`. Reaproveita `AIB_LABEL_*` de `src/defaults.js` via `vm` |
-| `.github/workflows/lista-compartilhada.yml` | Roda o script em issues com título `[lista]`, faz commit da lista, comenta e fecha a issue |
+| `.github/workflows/lista-compartilhada.yml` | Roda o script em issues com título `[lista]`. Faz checkout da `main` (código) e da branch `lista` em `dados/` (`AIB_LIST_FILE=dados/lists/ai-list.json`), faz commit e push só na `lista`, comenta e fecha a issue |
 | `src/content.css` | `[data-aib-state=hide|blur]`, `.aib-badge`, `#aib-wall` |
 | `popup/popup.*` | Painel do ícone (configurações). Salva na hora ao mudar interruptores |
 | `popup/lists.*` | Página "Vídeos e canais bloqueados", aberta numa aba via `runtime.getURL` |
@@ -73,13 +73,14 @@ Não há testes unitários. Os testes são feitos no YouTube real:
 
 ## Lista compartilhada: como funciona
 
-- **Receber:** o `background.js` baixa `AIB_SHARED_LIST_URL` (raw do GitHub, com CORS `*`, sem cookies). O content script monta:
+- **Receber:** o `background.js` baixa `AIB_SHARED_LIST_URL` (raw do GitHub da branch `lista`, com CORS `*`, sem cookies). O repositório precisa ser **público**: no privado, o raw devolve 404. O content script monta:
   - `sharedVideoMap`: vídeos que contam como "com selo";
   - `sharedBlockedSet`: chaves de canais com **mais de `autoBlockThreshold`** vídeos na lista. Só vale com `autoBlockChannels` ligado. Motivo exibido: "canal na lista compartilhada".
 - **Enviar:** a aba Compartilhar (`popup/lists.js`) junta os IDs de `aiChannels`, exceto os que já estão na lista ou em `submittedVideos`, até `AIB_SUBMIT_MAX` (300). Depois abre `github.com/.../issues/new` com o título `[lista] ...` e um bloco `aib-ids`. A pessoa confirma no GitHub.
   - Não grave no GitHub direto da extensão: isso exigiria token embutido.
 - **Robô:** só confia nos IDs. O texto da issue entra no script por variável de ambiente e nunca é interpolado no shell.
   - Se mais da metade das consultas falhar (YouTube recusando), o script sai com código 2, e o workflow comenta e deixa a issue aberta.
+- **Rodar o robô localmente:** clone a branch `lista` em `dados/` e rode `AIB_LIST_FILE=dados/lists/ai-list.json node scripts/verify-list.mjs ID1 ID2`.
 - **Testar a extensão contra uma lista local:** troque `AIB_SHARED_LIST_URL` numa cópia por um servidor local com `access-control-allow-origin: *`.
 
 ## Pendências
