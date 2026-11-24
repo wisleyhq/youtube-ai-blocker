@@ -52,10 +52,29 @@ Verificação do rótulo (7 de 7 corretos):
   - 1 anúncio de "Assistente de IA" (modo rigoroso).
 - Nenhum vídeo comum de receita foi bloqueado.
 
+## 5. Firefox real (Firefox 160, versão 1.1.0)
+
+A extensão foi carregada como complemento temporário num Firefox 160 de
+verdade (automatizado com Puppeteer via WebDriver BiDi, perfil limpo).
+
+- **Rótulo oficial** (palavras-chave e modo rigoroso desligados): os mesmos
+  7 vídeos da seção 2 deram 7 de 7 corretos. Nos 4 vídeos de IA a tela de
+  bloqueio apareceu e o vídeo ficou pausado.
+- **Miniaturas**: a barra lateral foi marcada só pelo rótulo (7 de 20 e 2 de
+  20 em dois vídeos sem rótulo), o que confirma que a consulta via
+  `content.fetch` funciona no Firefox.
+- **"Assistir mesmo assim"**: remove a tela e o vídeo volta a tocar.
+- **Busca "#aivideo"** (configuração padrão): 99 de 107 cartões marcados.
+  Inclui tutoriais sobre ferramentas de IA (efeito esperado do modo rigoroso).
+- **Busca "receita bolo de cenoura"** (configuração padrão): 2 de 64
+  marcados, ambos vídeos de bolo declarados como IA. Nenhuma receita comum
+  bloqueada.
+- **`web-ext lint`** (validador da Mozilla): 0 erros, 0 avisos.
+- O painel (popup) não pôde ser testado de forma automática: o Firefox não
+  deixa a automação abrir páginas `moz-extension://`. Conferir à mão.
+
 ## Limitações
 
-- Testado no Chromium com API simulada; no Firefox a consulta usa
-  `content.fetch` (mesma origem da página). Vale conferir no Firefox real.
 - Vídeos de IA sem rótulo, sem palavra-chave e de canal desconhecido passam.
 - O modo rigoroso bloqueia também vídeos que só falam sobre IA (notícias,
   tutoriais). Desative no painel ou use "Canais sempre permitidos".
