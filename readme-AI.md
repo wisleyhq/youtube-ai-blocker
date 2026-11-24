@@ -85,6 +85,6 @@ Não há testes unitários. Os testes são feitos no YouTube real:
 
 ## Pendências
 
-- **Distribuição:** a extensão está na AMO como **"Por conta própria"** (unlisted), sem página pública. O `.xpi` assinado é baixado na Central do Desenvolvedor (só com login, e o Firefox tenta instalar: use "Salvar link como") e publicado em GitHub Releases (`gh release create vX.Y.Z arquivo.xpi`). Para cada versão nova: suba o `manifest.json` com versão nova, envie à AMO, baixe o assinado e crie a release.
+- **Distribuição:** a extensão está cadastrada na AMO, mas sem página pública na loja (em 24/11/2026 a API pública pedia login para vê-la). O `.xpi` assinado é baixado na Central do Desenvolvedor (só com login, e o Firefox tenta instalar: use "Salvar link como") e publicado em GitHub Releases (`gh release create vX.Y.Z arquivo.xpi`). Para cada versão nova: suba o `manifest.json` com versão nova, envie à AMO, baixe o assinado e crie a release.
 - Sem atualização automática ainda: daria para adicionar `update_url` no manifesto apontando para um `updates.json`, ou publicar na loja (listed).
 - **Desempenho da lista compartilhada** (medido): ~26 ms e ~14 MB por aba com 100 mil vídeos; ~0,5 s e ~83 MB com 1 milhão. Ideias se crescer: limitar os IDs por canal (guardando a contagem), montar a lista só no `background.js` e baixar só quando mudar (ETag).
