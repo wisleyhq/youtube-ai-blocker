@@ -79,6 +79,8 @@ async function enviar(req, env) {
 
 async function pendentes(url, env) {
   const limite = Math.min(Math.max(parseInt(url.searchParams.get("limite") || "2000", 10) || 2000, 1), 5000);
+  // O robô passa aqui a cada 6 h: apaga os contadores de dias anteriores
+  await env.DB.prepare("DELETE FROM limites WHERE dia < ?1").bind(new Date().toISOString().slice(0, 10)).run();
   const { results } = await env.DB.prepare("SELECT id FROM pendentes ORDER BY recebido LIMIT ?1").bind(limite).all();
   const total = await env.DB.prepare("SELECT COUNT(*) AS n FROM pendentes").first();
   return json({ ok: true, ids: results.map((r) => r.id), naFila: total?.n || 0 });

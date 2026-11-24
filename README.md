@@ -34,9 +34,9 @@ Quando um canal publica **mais de 10 vídeos diferentes** com o selo "Criado com
 Todos que usam a extensão podem ajudar a montar uma lista única de vídeos e canais de IA, guardada neste repositório na branch [`lista`](https://github.com/wisleyhq/youtube-ai-blocker/blob/lista/lists/ai-list.json), separada do código.
 
 - **Receber:** a extensão baixa a lista do GitHub a cada 12 horas. Vídeos da lista são bloqueados na hora, e canais com mais de 10 vídeos nela são bloqueados para todos.
-- **Contribuir:** na página de listas, aba **Compartilhar**, clique em **"Enviar para a lista compartilhada"**. Abre o GitHub com uma mensagem pronta, e você só confirma (é preciso ter uma conta no GitHub, gratuita).
-- **Sem bagunça:** antes de entrar, um robô do GitHub confere **cada vídeo** direto no YouTube. Só entram os que têm o selo "Criado com IA". Ninguém consegue incluir um canal comum na lista.
-- **Privacidade:** a contribuição é pública e fica no GitHub com o seu nome de usuário, junto com os IDs dos vídeos enviados. Envie só se estiver de acordo.
+- **Contribuir:** na página de listas, aba **Compartilhar**, ligue **"Enviar automaticamente"**. A cada 6 horas a extensão manda os vídeos com selo que você encontrou, sem você fazer nada e sem precisar de conta. Também dá para clicar em **"Enviar agora"**. Na primeira vez, o Firefox pede a sua permissão.
+- **Sem bagunça:** antes de entrar, um robô confere **cada vídeo** direto no YouTube (a cada 6 horas). Só entram os que têm o selo "Criado com IA". Ninguém consegue incluir um canal comum na lista.
+- **Privacidade:** o envio é **anônimo** e **desligado até você ligar**. Vão só os códigos dos vídeos com o selo, sem nome, conta ou histórico. Eles passam por uma fila do projeto na Cloudflare, que não guarda o seu IP.
 - Para não usar a lista, desligue **"Usar a lista compartilhada da comunidade"** no painel.
 
 ## Listas de vídeos e canais
@@ -48,7 +48,7 @@ No painel da extensão, clique em **"Ver vídeos e canais bloqueados"**. Abre um
 | **Vídeos** | Os últimos 1000 vídeos bloqueados: título, canal, motivo e data | Buscar, abrir o vídeo, **liberar** o vídeo, limpar o histórico |
 | **Canais** | Todos os canais com vídeos de IA, quantos vídeos com selo cada um tem e quantos faltam para o bloqueio | Bloquear agora, desbloquear, **sempre permitir** |
 | **Vídeos liberados** | Os vídeos que você liberou | Desfazer a liberação |
-| **Compartilhar** | O estado da lista compartilhada e quantos vídeos novos você encontrou | Enviar sua contribuição |
+| **Compartilhar** | O estado da lista compartilhada, quantos vídeos novos você encontrou e o último envio | Ligar o envio automático, enviar agora |
 
 Um canal **"sempre permitido"** nunca é bloqueado, nem mesmo pelo selo.
 
@@ -84,9 +84,9 @@ Clique no ícone da extensão:
 
 ## Privacidade
 
-- A extensão só se comunica com o **próprio YouTube**, para ler o selo de cada vídeo, e com o **GitHub**, para baixar a lista compartilhada. Esse download não envia nenhum dado seu.
-- Nada é enviado sem você clicar em **Enviar** e confirmar no GitHub.
-- Não há conta, servidor, rastreamento nem anúncios.
+- A extensão se comunica com o **próprio YouTube**, para ler o selo de cada vídeo, e com o **GitHub**, para baixar a lista compartilhada. Esse download não envia nenhum dado seu.
+- **Só se você ligar** o envio para a lista compartilhada (e aceitar o pedido de permissão do Firefox), ela manda para a fila do projeto, na Cloudflare, os códigos dos vídeos com selo que você encontrou. O envio é anônimo: a fila não guarda o seu IP, só um código temporário para limitar envios, apagado no dia seguinte. O código da fila está na pasta [`worker/`](worker/).
+- Não há conta, rastreamento nem anúncios.
 - Configurações, listas e histórico ficam guardados só no seu Firefox.
 
 ## Perguntas frequentes

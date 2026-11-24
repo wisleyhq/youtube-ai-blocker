@@ -136,6 +136,20 @@ O robô passou a gravar a lista na branch `lista`, e não mais na `main`.
 - **Extensão:** baixa a lista do endereço da branch `lista`.
 - **`web-ext lint`:** 0 erros, 0 avisos.
 
+## 9. Versão 1.4.0: envio automático e anônimo (24/11/2026)
+
+- **Fila (Cloudflare Worker), testada no computador:**
+  - envio válido, IDs repetidos e lixo recusado;
+  - senha do robô exigida, senha errada recusada;
+  - remoção da fila, limite de 500 por envio, CORS e limite diário por pessoa (HTTP 429).
+- **Fila publicada:** `https://aib-lista.wisleyhq.workers.dev`. Sem a senha, `/pendentes` responde "não autorizado".
+- **De ponta a ponta:**
+  - a extensão no Firefox 160 viu 3 vídeos com selo e, ao ligar o envio automático, mandou os 3 para a fila;
+  - o robô "Lista automática", rodado à mão no GitHub, leu os 3, conferiu, adicionou os 3 na branch `lista` e esvaziou a fila.
+- **Permissão do Firefox:** sem ninguém permitir, `permissions.contains` responde `false`, e a extensão não envia nada. Na cópia de teste essa checagem foi pulada, porque a automação não consegue clicar no pedido de permissão. O pedido real precisa ser conferido à mão.
+- **Aba Compartilhar** (dados simulados): ligar o envio automático pede a permissão e liga, e "Enviar agora" manda o pedido ao script de fundo.
+- **`web-ext lint`** com `data_collection_permissions` opcional: 0 erros, 0 avisos.
+
 ## Limitações
 
 - Vídeos de IA que o criador não declarou não têm selo e passam (exceto se o

@@ -7,7 +7,7 @@ Contexto técnico para quem for alterar este código. O [README.md](README.md) �
 - **Só o selo oficial bloqueia vídeos.** O dono do projeto decidiu (versão 1.2.0) eliminar falsos positivos. Bloqueio por palavra-chave, título ou "modo rigoroso" foi removido de propósito. Não reintroduza sem pedido explícito.
 - O canal só é bloqueado automaticamente com **mais de `autoBlockThreshold` (padrão 10)** vídeos **diferentes** com o selo. A comparação é `>` e não `>=`.
 - Interface, comentários, mensagens de commit e documentação em **português do Brasil**.
-- Sem dependências, sem build e sem servidor próprio. A extensão só acessa o YouTube (selo) e o `raw.githubusercontent.com` (lista compartilhada, só leitura).
+- Sem dependências e sem build. A extensão acessa o YouTube (selo), o `raw.githubusercontent.com` (lista compartilhada, só leitura) e, **só com consentimento**, a fila `AIB_WORKER_URL` (Cloudflare Worker em `worker/`).
 - Nada de `innerHTML` com dados do YouTube: monte o DOM com `createElement` e `textContent`. O `web-ext lint` acusa e a AMO rejeita.
 - Antes de commitar, rode `web-ext lint`. A meta é 0 erros e 0 avisos.
 
@@ -21,6 +21,9 @@ Contexto técnico para quem for alterar este código. O [README.md](README.md) �
 | `src/background.js` | Script de fundo (`background.scripts`): baixa a lista compartilhada. Fica fora do content script porque, no Firefox, o `fetch` feito de dentro da página do YouTube não completava |
 | `lists/ai-list.json` **na branch `lista`** | Lista compartilhada: `{version, updated, channels: {"@handle": {name, videos: [ids]}}}`. Só o robô grava nela. Fica numa branch só de dados para a `main` não receber commits do robô (assim ninguém precisa dar `pull` por causa da lista). Não existe na `main` |
 | `scripts/verify-list.mjs` | Script do robô (Node 20, sem dependências). Lê IDs do bloco `aib-ids` da issue (env `ISSUE_BODY`) ou de argumentos, confere o selo de cada um e grava a lista e `resultado.md`. Reaproveita `AIB_LABEL_*` de `src/defaults.js` via `vm` |
+| `worker/` | Fila de contribuições anônimas: Cloudflare Worker `aib-lista` + banco D1 `aib-lista` (`schema.sql`). `POST /enviar` público (até 500 IDs, 20 envios/dia por hash de IP+dia, fila máx. 200 mil). `GET /pendentes` e `POST /pendentes/remover` exigem `Authorization: Bearer ROBO_TOKEN` (segredo do Worker). Publicar: `wrangler deploy` dentro de `worker/` (conta Cloudflare do dono) |
+| `scripts/fila.mjs` | Usado pelo robô: `buscar ARQUIVO LIMITE` e `remover ARQUIVO` (precisa de `AIB_WORKER_URL` e `AIB_WORKER_TOKEN`) |
+| `.github/workflows/lista-automatica.yml` | A cada 6 h (e manual): lê até 2000 IDs da fila, confere (`AIB_IDS_FILE`, `AIB_MAX_IDS=2000`), grava na branch `lista` e só então tira da fila. Segredos do repositório: `AIB_WORKER_URL`, `AIB_WORKER_TOKEN` (mesmo valor do `ROBO_TOKEN` do Worker) |
 | `.github/workflows/lista-compartilhada.yml` | Roda o script em issues com título `[lista]`. Faz checkout da `main` (código) e da branch `lista` em `dados/` (`AIB_LIST_FILE=dados/lists/ai-list.json`), faz commit e push só na `lista`, comenta e fecha a issue |
 | `src/content.css` | `[data-aib-state=hide|blur]`, `.aib-badge`, `#aib-wall` |
 | `popup/popup.*` | Painel do ícone (configurações). Salva na hora ao mudar interruptores |
@@ -76,8 +79,9 @@ Não há testes unitários. Os testes são feitos no YouTube real:
 - **Receber:** o `background.js` baixa `AIB_SHARED_LIST_URL` (raw do GitHub da branch `lista`, com CORS `*`, sem cookies). O repositório precisa ser **público**: no privado, o raw devolve 404. O content script monta:
   - `sharedVideoMap`: vídeos que contam como "com selo";
   - `sharedBlockedSet`: chaves de canais com **mais de `autoBlockThreshold`** vídeos na lista. Só vale com `autoBlockChannels` ligado. Motivo exibido: "canal na lista compartilhada".
-- **Enviar:** a aba Compartilhar (`popup/lists.js`) junta os IDs de `aiChannels`, exceto os que já estão na lista ou em `submittedVideos`, até `AIB_SUBMIT_MAX` (300). Depois abre `github.com/.../issues/new` com o título `[lista] ...` e um bloco `aib-ids`. A pessoa confirma no GitHub.
-  - Não grave no GitHub direto da extensão: isso exigiria token embutido.
+- **Enviar (1.4.0+):** opcional e desligado por padrão (`autoShare`). Precisa da permissão opcional de coleta de dados `browsingActivity` (`data_collection_permissions.optional` no manifesto), pedida com `permissions.request` direto no clique (aba Compartilhar). O `background.js` envia a cada 6 h (`alarms`, alarme `aib-6h`), ao ligar o envio e no botão "Enviar agora". Manda IDs de `aiChannels` que não estão na lista nem em `submittedVideos` (até 2000 por rodada, 500 por pedido) e grava `lastShare`. Sem permissão, não envia nada.
+  - O caminho antigo por issue `[lista]` continua funcionando no robô, mas a extensão não abre mais issues.
+  - O script de fundo é suspenso pelo Firefox depois de ~30 s parado: use alarmes ou eventos, nunca `setTimeout` longo.
 - **Robô:** só confia nos IDs. O texto da issue entra no script por variável de ambiente e nunca é interpolado no shell.
   - Se mais da metade das consultas falhar (YouTube recusando), o script sai com código 2, e o workflow comenta e deixa a issue aberta.
 - **Rodar o robô localmente:** clone a branch `lista` em `dados/` e rode `AIB_LIST_FILE=dados/lists/ai-list.json node scripts/verify-list.mjs ID1 ID2`.
