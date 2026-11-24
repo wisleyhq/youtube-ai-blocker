@@ -124,6 +124,18 @@ Palavras-chave e modo rigoroso foram removidos. Testes no Firefox real, como na 
 - **Repositório público:** a lista e as contribuições só funcionam com o
   repositório público. No privado, o endereço da lista dá "não encontrado".
 
+## 8. Versão 1.3.1: lista numa branch separada (24/11/2026)
+
+O robô passou a gravar a lista na branch `lista`, e não mais na `main`.
+
+- **Robô no GitHub** ([issue #2](https://github.com/wisleyhq/youtube-ai-blocker/issues/2)):
+  o teste levou 1 vídeo com selo (`3R3pXjcUyIQ`) e 1 sem selo (`dx05ivXQ4Ko`).
+  - Só o primeiro entrou na lista. O commit do robô foi feito na branch `lista`.
+  - A `main` não mudou: o último commit continuou o mesmo antes e depois.
+  - A issue foi respondida e fechada.
+- **Extensão:** baixa a lista do endereço da branch `lista`.
+- **`web-ext lint`:** 0 erros, 0 avisos.
+
 ## Limitações
 
 - Vídeos de IA que o criador não declarou não têm selo e passam (exceto se o
