@@ -4,6 +4,7 @@
 // Uso:
 //   ISSUE_BODY="..." node scripts/verify-list.mjs     (GitHub Actions)
 //   node scripts/verify-list.mjs ID1 ID2 ...          (manual)
+//   AIB_IDS_FILE=ids.txt node scripts/verify-list.mjs  (fila automática)
 //
 // Grava o resumo em resultado.md e, no GitHub Actions, as saídas
 // "added", "checked" e "failed" em $GITHUB_OUTPUT.
@@ -17,7 +18,7 @@ import vm from "node:vm";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 // No GitHub Actions a lista vem da branch "lista" (AIB_LIST_FILE aponta para ela)
 const LIST_FILE = process.env.AIB_LIST_FILE || join(ROOT, "lists", "ai-list.json");
-const MAX_IDS = 500;
+const MAX_IDS = parseInt(process.env.AIB_MAX_IDS || "500", 10);
 const ID_RE = /^[A-Za-z0-9_-]{11}$/;
 
 // Mesmas regras de detecção da extensão (src/defaults.js)
@@ -42,6 +43,7 @@ function handleFromPath(path) {
 // Lê os IDs só do bloco ```aib-ids ... ``` (ou dos argumentos)
 function readIds() {
   let raw = process.argv.slice(2).join(" ");
+  if (!raw && process.env.AIB_IDS_FILE) raw = readFileSync(process.env.AIB_IDS_FILE, "utf8");
   if (!raw) {
     const body = process.env.ISSUE_BODY || "";
     const m = body.match(/```aib-ids\s*([\s\S]*?)```/);

@@ -3,3 +3,6 @@ web-ext-artifacts/
 *.xpi
 *.zip
 resultado.md
+worker/.wrangler/
+worker/.dev.vars
+ids.txt

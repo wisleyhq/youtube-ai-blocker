@@ -1,4 +1,4 @@
-/* global AIB_DEFAULTS, AIB_REPO_URL, AIB_SUBMIT_MAX */
+/* global AIB_DEFAULTS */
 (() => {
   "use strict";
 
@@ -229,30 +229,57 @@
     const n = shareCandidates().length;
     $("nShare").textContent = n;
     $("shareCount").textContent = n
-      ? `Você encontrou ${n} vídeo(s) com o selo "Criado com IA" que ainda não estão na lista.${n > AIB_SUBMIT_MAX ? ` Serão enviados ${AIB_SUBMIT_MAX} por vez.` : ""}`
+      ? `Você encontrou ${n} vídeo(s) com o selo "Criado com IA" que ainda não estão na lista.`
       : "Nenhum vídeo novo para enviar. Continue usando o YouTube: os vídeos com selo que você encontrar aparecem aqui.";
     $("share").disabled = n === 0;
+    $("autoShare").checked = !!data.autoShare;
+    const last = data.lastShare;
+    $("lastShare").textContent = last?.when
+      ? `Último envio: ${new Date(last.when).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}, ${last.sent} vídeo(s)${last.error ? ` (parou: ${last.error})` : ""}.`
+      : "Nenhum envio ainda.";
   }
 
-  async function share() {
-    const ids = shareCandidates().slice(0, AIB_SUBMIT_MAX);
-    if (!ids.length) return;
-    const body = [
-      "Contribuição enviada pela extensão Bloqueador de Vídeos de IA para YouTube.",
-      "",
-      "Um robô vai conferir cada vídeo no YouTube: só entram na lista os que têm o selo oficial \"Criado com IA\".",
-      "Não altere o bloco abaixo.",
-      "",
-      "```aib-ids",
-      ids.join(" "),
-      "```"
-    ].join("\n");
-    const url = `${AIB_REPO_URL}/issues/new?title=${encodeURIComponent(`[lista] ${ids.length} vídeo(s) com selo de IA`)}&body=${encodeURIComponent(body)}`;
-    await api.tabs.create({ url });
-    const { submittedVideos = [] } = await api.storage.local.get("submittedVideos");
-    // guarda os últimos 5000 enviados, para não mandar de novo
-    await api.storage.local.set({ submittedVideos: [...submittedVideos, ...ids].slice(-5000) });
-    msg(`Abri o GitHub com ${ids.length} vídeo(s). Falta clicar em "Create" lá.`);
+  const CONSENT = { data_collection: ["browsingActivity"] };
+
+  // Pede a permissão do Firefox (precisa ser chamada direto de um clique)
+  async function askConsent() {
+    try {
+      if (await api.permissions.contains(CONSENT)) return true;
+      return await api.permissions.request(CONSENT);
+    } catch {
+      return false;
+    }
+  }
+
+  function showResult(r) {
+    if (!r) return;
+    if (r.reason === "consent") msg("Sem a permissão do Firefox, nada é enviado.", true);
+    else if (r.error) msg(`Enviados ${r.sent}. Parou: ${r.error}.`, true);
+    else if (r.sent) msg(`Enviados ${r.sent} vídeo(s). O robô confere e adiciona em até 6 horas.`);
+    else msg("Nada novo para enviar.");
+  }
+
+  async function sendNow() {
+    $("share").disabled = true;
+    // a permissão é pedida aqui, no clique; o envio é feito pelo script de fundo
+    if (!(await askConsent())) {
+      msg("Sem a permissão do Firefox, nada é enviado.", true);
+      renderShare();
+      return;
+    }
+    msg("Enviando…");
+    showResult(await api.runtime.sendMessage({ type: "aib:sendNow" }));
+  }
+
+  async function toggleAuto(e) {
+    const on = e.target.checked;
+    if (on && !(await askConsent())) {
+      e.target.checked = false;
+      msg("Sem a permissão do Firefox, o envio automático fica desligado.", true);
+      return;
+    }
+    await api.storage.local.set({ autoShare: on });
+    msg(on ? "Envio automático ligado: a cada 6 horas, sem você precisar fazer nada." : "Envio automático desligado.");
   }
 
   // ---------- geral ----------
@@ -278,7 +305,8 @@
   $("qChannels").addEventListener("input", renderChannels);
   $("fChannels").addEventListener("change", renderChannels);
 
-  $("share").addEventListener("click", share);
+  $("share").addEventListener("click", sendNow);
+  $("autoShare").addEventListener("change", toggleAuto);
 
   $("clearHistory").addEventListener("click", async () => {
     if (!confirm("Apagar o histórico de vídeos bloqueados? As listas de canais continuam como estão.")) return;

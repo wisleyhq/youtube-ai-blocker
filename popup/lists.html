@@ -80,15 +80,15 @@
     <div class="card">
       <h2>Contribuir</h2>
       <p id="shareCount"></p>
-      <ol class="steps">
-        <li>Clique em <b>Enviar</b>. Abre o GitHub com a mensagem pronta (é preciso ter uma conta no GitHub, gratuita).</li>
-        <li>Lá, clique em <b>Create</b> (ou <b>Submit new issue</b>).</li>
-        <li>Em alguns minutos o robô confere cada vídeo no YouTube, adiciona os que têm o selo e responde na própria página.</li>
-      </ol>
-      <p class="warn"><b>Atenção à privacidade:</b> a contribuição é pública. Ela fica no GitHub com o seu nome de usuário e a
-        lista de vídeos enviados, que são vídeos que você viu no YouTube. Só são enviados os IDs dos vídeos: nada de
-        histórico completo, datas ou dados da sua conta.</p>
-      <button id="share" class="primary">Enviar para a lista compartilhada</button>
+      <label class="check"><input type="checkbox" id="autoShare">
+        <span><b>Enviar automaticamente</b>, a cada 6 horas, sem precisar fazer nada</span></label>
+      <p><button id="share" class="primary">Enviar agora</button></p>
+      <p id="lastShare" class="hint"></p>
+      <p class="warn"><b>Privacidade:</b> o envio é <b>anônimo</b>. Vão só os códigos (IDs) dos vídeos com o selo
+        "Criado com IA" que você encontrou: nada de nome, conta, histórico completo ou datas. Eles vão para a fila do
+        projeto (um servidor na Cloudflare), que não guarda o seu IP, só um código temporário para limitar envios,
+        apagado no dia seguinte. Um robô confere cada vídeo no YouTube antes de pôr na lista. Na primeira vez, o
+        Firefox pede a sua permissão para "atividade de navegação".</p>
     </div>
   </section>
 

@@ -1,0 +1,76 @@
+# Processa as contribuições automáticas e anônimas enviadas pela extensão.
+#
+# A extensão manda IDs de vídeos com o selo de IA para uma fila (Cloudflare
+# Worker, pasta worker/). Este robô roda a cada 6 horas: lê a fila, confere
+# cada vídeo no YouTube, grava os que têm o selo na branch "lista" e tira da
+# fila o que já conferiu.
+#
+# Segredos do repositório: AIB_WORKER_URL e AIB_WORKER_TOKEN.
+
+name: Lista automática
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+# Mesmo grupo do robô das issues, para os commits na lista não se atropelarem
+concurrency:
+  group: lista-compartilhada
+  cancel-in-progress: false
+
+jobs:
+  processar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      AIB_WORKER_URL: ${{ secrets.AIB_WORKER_URL }}
+      AIB_WORKER_TOKEN: ${{ secrets.AIB_WORKER_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          ref: lista
+          path: dados
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Ler a fila
+        id: fila
+        run: node scripts/fila.mjs buscar ids.txt 2000
+
+      - name: Conferir o selo dos vídeos no YouTube
+        id: verify
+        if: steps.fila.outputs.count != '0'
+        env:
+          AIB_IDS_FILE: ids.txt
+          AIB_MAX_IDS: "2000"
+          AIB_LIST_FILE: dados/lists/ai-list.json
+        run: node scripts/verify-list.mjs
+
+      - name: Salvar a lista
+        if: steps.fila.outputs.count != '0' && steps.verify.outputs.added != '0'
+        working-directory: dados
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lists/ai-list.json
+          git commit -m "Lista compartilhada: contribuições automáticas"
+          git pull --rebase origin lista
+          git push origin HEAD:lista
+
+      # Só tira da fila depois de conferir e salvar. Se o YouTube recusar as
+      # consultas, o passo de conferir falha e os vídeos ficam para a próxima vez.
+      - name: Tirar da fila o que já foi conferido
+        if: steps.fila.outputs.count != '0'
+        run: node scripts/fila.mjs remover ids.txt
+
+      - name: Resumo
+        if: always() && steps.fila.outputs.count != '0'
+        run: cat resultado.md >> "$GITHUB_STEP_SUMMARY" || true

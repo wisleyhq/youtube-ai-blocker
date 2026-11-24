@@ -17,6 +17,9 @@ const AIB_DEFAULTS = {
   blockWatchPage: true,
   // Usa a lista compartilhada da comunidade (baixada do GitHub, só leitura)
   useSharedList: true,
+  // Envia sozinho, a cada 6 h, os vídeos com selo encontrados (anônimo, só
+  // com a permissão "atividade de navegação" do Firefox)
+  autoShare: false,
   // Canais bloqueados: "@handle" ou o nome exibido do canal
   blockedChannels: [],
   // Canais que nunca serão bloqueados (evita falsos positivos)
@@ -38,7 +41,10 @@ const AIB_SHARED_LIST_URL = "https://raw.githubusercontent.com/wisleyhq/youtube-
 // eslint-disable-next-line no-unused-vars
 const AIB_SHARED_REFRESH_MS = 12 * 60 * 60 * 1000; // baixa de novo a cada 12 h
 // eslint-disable-next-line no-unused-vars
-const AIB_SUBMIT_MAX = 300; // vídeos por envio (limite de tamanho do link da issue)
+const AIB_SUBMIT_MAX = 500; // vídeos por envio
+// Fila de contribuições anônimas (Cloudflare Worker, pasta worker/ do repositório)
+// eslint-disable-next-line no-unused-vars
+const AIB_WORKER_URL = "https://aib-lista.wisleyhq.workers.dev";
 
 // Artigo de ajuda do YouTube ligado ao rótulo "Criado com IA".
 // Outros rótulos da mesma seção (ex.: dublagem automática) usam outro artigo.

@@ -1,0 +1,8 @@
+name = "aib-lista"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "aib-lista"
+database_id = "2e349d44-4eb8-4cf0-ad92-f3957d167ff4"
