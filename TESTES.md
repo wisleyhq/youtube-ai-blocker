@@ -117,8 +117,12 @@ Palavras-chave e modo rigoroso foram removidos. Testes no Firefox real, como na 
   lista e ainda não foram enviados. O link abre a issue com título `[lista]` e
   o bloco `aib-ids` correto.
 - **`web-ext lint`:** 0 erros, 0 avisos.
-- **Ainda não testado:** o workflow rodando no GitHub de verdade (precisa de
-  uma issue real).
+- **Robô no GitHub de verdade** ([issue #1](https://github.com/wisleyhq/youtube-ai-blocker/issues/1)):
+  o teste levou 1 vídeo com selo (`MaWQPAvLPXo`) e 1 sem selo (`dx05ivXQ4Ko`).
+  O robô adicionou só o primeiro, fez o commit na lista, respondeu e fechou a
+  issue. A extensão real baixou a lista do GitHub.
+- **Repositório público:** a lista e as contribuições só funcionam com o
+  repositório público. No privado, o endereço da lista dá "não encontrado".
 
 ## Limitações
 
