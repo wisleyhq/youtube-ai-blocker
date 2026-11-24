@@ -54,19 +54,21 @@ Um canal **"sempre permitido"** nunca é bloqueado, nem mesmo pelo selo.
 
 ## Instalar
 
-### Para testar (some quando o Firefox fecha)
+1. Baixe a versão mais recente na página [**Releases**](https://github.com/wisleyhq/youtube-ai-blocker/releases/latest): o arquivo `.xpi` em **Assets**.
+   - No Firefox, clicar no arquivo já oferece a instalação.
+   - Em outro navegador, salve o arquivo e depois arraste para uma janela do Firefox.
+2. Clique em **Adicionar**.
+3. Abra ou recarregue o YouTube.
+
+O arquivo é **assinado pela Mozilla** e funciona no Firefox comum, versão 142 ou mais nova. A extensão ainda não está na loja de complementos do Firefox, então as atualizações não são automáticas: quando sair uma versão nova em Releases, instale de novo por cima.
+
+### Para desenvolvedores (versão temporária)
 
 1. Baixe este repositório: botão verde **Code → Download ZIP**, e descompacte.
 2. No Firefox, abra `about:debugging#/runtime/this-firefox`.
 3. Clique em **"Carregar extensão temporária…"** e escolha o arquivo `manifest.json` da pasta.
-4. Abra ou recarregue o YouTube.
 
-### Para usar sempre
-
-O Firefox comum só instala extensões assinadas pela Mozilla. A extensão ainda não está publicada na loja de complementos. O arquivo `.xpi` será disponibilizado na página [Releases](https://github.com/wisleyhq/youtube-ai-blocker/releases). Enquanto isso:
-
-- **Firefox Developer Edition ou Nightly**: em `about:config`, mude `xpinstall.signatures.required` para `false`. Depois instale o arquivo `.xpi`.
-- **Assinatura própria, de graça**: crie uma conta em <https://addons.mozilla.org/developers/> e envie o `.xpi` como **"Por conta própria"**. Em poucos minutos você baixa o arquivo assinado e instala arrastando para o Firefox.
+Ela some quando o Firefox fecha.
 
 ## Configurações
 
