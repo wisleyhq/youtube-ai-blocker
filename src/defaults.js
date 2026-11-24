@@ -15,6 +15,8 @@ const AIB_DEFAULTS = {
   autoBlockThreshold: 10,
   // Mostra uma tela de bloqueio ao abrir um vídeo/Short detectado como IA
   blockWatchPage: true,
+  // Usa a lista compartilhada da comunidade (baixada do GitHub, só leitura)
+  useSharedList: true,
   // Canais bloqueados: "@handle" ou o nome exibido do canal
   blockedChannels: [],
   // Canais que nunca serão bloqueados (evita falsos positivos)
@@ -26,6 +28,17 @@ const AIB_DEFAULTS = {
 // Limite do histórico de vídeos bloqueados (os mais antigos saem primeiro)
 // eslint-disable-next-line no-unused-vars
 const AIB_HISTORY_MAX = 1000;
+
+// Lista compartilhada: vídeos com o selo oficial, conferidos por um robô no
+// GitHub antes de entrar (veja .github/workflows/lista-compartilhada.yml)
+// eslint-disable-next-line no-unused-vars
+const AIB_REPO_URL = "https://github.com/wisleyhq/youtube-ai-blocker";
+// eslint-disable-next-line no-unused-vars
+const AIB_SHARED_LIST_URL = "https://raw.githubusercontent.com/wisleyhq/youtube-ai-blocker/main/lists/ai-list.json";
+// eslint-disable-next-line no-unused-vars
+const AIB_SHARED_REFRESH_MS = 12 * 60 * 60 * 1000; // baixa de novo a cada 12 h
+// eslint-disable-next-line no-unused-vars
+const AIB_SUBMIT_MAX = 300; // vídeos por envio (limite de tamanho do link da issue)
 
 // Artigo de ajuda do YouTube ligado ao rótulo "Criado com IA".
 // Outros rótulos da mesma seção (ex.: dublagem automática) usam outro artigo.

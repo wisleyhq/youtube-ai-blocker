@@ -99,9 +99,30 @@ Palavras-chave e modo rigoroso foram removidos. Testes no Firefox real, como na 
   lateral em tela de celular.
 - **`web-ext lint`:** 0 erros, 0 avisos.
 
+## 7. Versão 1.3.0: lista compartilhada (Firefox 160, 24/11/2026)
+
+- **Robô (`scripts/verify-list.mjs`), rodado no computador com os 7 vídeos de
+  referência mais 1 ID inválido:** 4 com selo adicionados, 3 sem selo
+  ignorados, 1 não conferido. Um texto malicioso dentro do bloco `aib-ids`
+  foi ignorado: só IDs válidos são lidos.
+- **Download da lista** (servidor local no lugar do GitHub): baixada pelo
+  script de fundo. Entradas inválidas foram descartadas.
+- **Vídeo da lista:** um vídeo sem selo, colocado na lista de teste, foi
+  bloqueado. Isso prova que a lista é usada sem consultar o YouTube.
+- **Canal com 11 vídeos na lista:** na página de Shorts do canal, 50 de 50
+  bloqueados. O canal vem da consulta, porque não aparece na página.
+- **Lista inexistente no GitHub** (antes do primeiro envio): a extensão
+  continua funcionando normalmente. Vídeos de referência: 7 de 7.
+- **Aba Compartilhar** (dados simulados): envia só vídeos que não estão na
+  lista e ainda não foram enviados. O link abre a issue com título `[lista]` e
+  o bloco `aib-ids` correto.
+- **`web-ext lint`:** 0 erros, 0 avisos.
+- **Ainda não testado:** o workflow rodando no GitHub de verdade (precisa de
+  uma issue real).
+
 ## Limitações
 
 - Vídeos de IA que o criador não declarou não têm selo e passam (exceto se o
   canal estiver bloqueado).
 - A contagem de vídeos por canal só inclui vídeos vistos com a extensão
-  ligada. Ainda não existe lista compartilhada entre usuários.
+  ligada. A lista compartilhada depende de contribuições.

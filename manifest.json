@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Bloqueador de Vídeos de IA para YouTube",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Oculta ou desfoca no YouTube os vídeos com o selo oficial \"Criado com IA\" e bloqueia canais com muitos vídeos assim.",
   "icons": {
     "48": "icons/icon.svg",
@@ -13,6 +13,12 @@
   "host_permissions": [
     "*://*.youtube.com/*"
   ],
+  "background": {
+    "scripts": [
+      "src/defaults.js",
+      "src/background.js"
+    ]
+  },
   "content_scripts": [
     {
       "matches": [

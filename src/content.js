@@ -37,6 +37,9 @@
   let blockedSet = new Set();
   let allowedSet = new Set();
   let allowedVideoSet = new Set();
+  // Lista compartilhada: id do vídeo -> canal, e canais acima do limite
+  let sharedVideoMap = new Map();
+  let sharedBlockedSet = new Set();
 
   // Estado da página de vídeo atual
   const watch = { id: null, blocked: false, allowed: false, reason: "", checking: false };
@@ -50,6 +53,29 @@
     blockedSet = new Set((cfg.blockedChannels || []).map(norm).filter(Boolean));
     allowedSet = new Set((cfg.allowedChannels || []).map(norm).filter(Boolean));
     allowedVideoSet = new Set((cfg.allowedVideos || []).map((s) => String(s).trim()).filter(Boolean));
+    buildShared(cfg.useSharedList ? stored.sharedList : null);
+  }
+
+  function buildShared(list) {
+    sharedVideoMap = new Map();
+    sharedBlockedSet = new Set();
+    if (!list?.channels) return;
+    const limit = cfg.autoBlockThreshold ?? 10;
+    Object.entries(list.channels).forEach(([key, c]) => {
+      const isHandle = key.startsWith("@") || /^UC[w-]{22}$/.test(key);
+      const ch = { handle: isHandle ? key : "", name: c.name || (isHandle ? "" : key) };
+      (c.videos || []).forEach((id) => sharedVideoMap.set(id, ch));
+      // Canal com mais de N vídeos com selo na lista: bloqueia (pelo @handle,
+      // que é único; pelo nome só quando não há handle)
+      if ((c.videos || []).length > limit) sharedBlockedSet.add(norm(key));
+    });
+  }
+
+  // Pede ao script de fundo para atualizar a lista compartilhada (ele decide se
+  // já está na hora: no máximo a cada 12 h)
+  function refreshShared() {
+    if (!cfg.useSharedList) return;
+    api.runtime.sendMessage({ type: "aib:refreshShared" }).catch(() => {});
   }
 
   function handleFromHref(href) {
@@ -101,7 +127,7 @@
 
   // ---------- rótulo oficial via API interna do YouTube ----------
 
-  const labelCache = new Map(); // id -> true/false
+  const labelCache = new Map(); // id -> { ai: true/false, h: "@handle" do canal }
   let cacheLoaded = false;
   let cacheSaveTimer = null;
   const CACHE_MAX = 4000;
@@ -110,7 +136,10 @@
     if (cacheLoaded) return;
     cacheLoaded = true;
     const { labelCache: saved = {} } = await api.storage.local.get("labelCache");
-    Object.entries(saved).forEach(([k, v]) => labelCache.set(k, !!v));
+    // formato salvo: 1/0 (versões antigas) ou [1/0, "@handle"]
+    Object.entries(saved).forEach(([k, v]) => {
+      labelCache.set(k, Array.isArray(v) ? { ai: !!v[0], h: String(v[1] || "") } : { ai: !!v, h: "" });
+    });
   }
 
   function saveCacheSoon() {
@@ -118,7 +147,7 @@
     cacheSaveTimer = setTimeout(() => {
       const entries = [...labelCache.entries()].slice(-CACHE_MAX);
       const obj = {};
-      entries.forEach(([k, v]) => { obj[k] = v ? 1 : 0; });
+      entries.forEach(([k, v]) => { obj[k] = v.h ? [v.ai ? 1 : 0, v.h] : (v.ai ? 1 : 0); });
       api.storage.local.set({ labelCache: obj });
     }, 3000);
   }
@@ -176,7 +205,16 @@
   let pausedUntil = 0;
 
   function checkLabel(id) {
-    if (labelCache.has(id)) return Promise.resolve(labelCache.get(id));
+    // Já está na lista compartilhada (conferido pelo robô): não consulta o YouTube
+    if (sharedVideoMap.has(id)) {
+      if (!labelInfo.has(id)) labelInfo.set(id, { title: "", ch: sharedVideoMap.get(id) });
+      return Promise.resolve(true);
+    }
+    if (labelCache.has(id)) {
+      const c = labelCache.get(id);
+      if (c.h && !labelInfo.has(id)) labelInfo.set(id, { title: "", ch: { handle: c.h, name: "" } });
+      return Promise.resolve(c.ai);
+    }
     return new Promise((resolve) => {
       if (waiting.has(id)) {
         waiting.get(id).push(resolve);
@@ -199,7 +237,7 @@
       fetchLabel(id)
         .then(({ ai, title, ch }) => {
           labelInfo.set(id, { title, ch });
-          labelCache.set(id, ai);
+          labelCache.set(id, { ai, h: ch.handle || "" });
           saveCacheSoon();
           return ai;
         })
@@ -354,6 +392,7 @@
   // ---------- cartões nos feeds ----------
 
   const LABEL_REASON = "selo oficial \"Criado com IA\" do YouTube";
+  const SHARED_CHANNEL_REASON = "canal na lista compartilhada";
 
   function clearCard(el) {
     delete el.dataset.aibState;
@@ -434,15 +473,29 @@
       blockCard(el, "canal bloqueado");
       return;
     }
+    if (cfg.autoBlockChannels && anyIn(keys, sharedBlockedSet)) {
+      blockCard(el, SHARED_CHANNEL_REASON);
+      return;
+    }
 
     // Só bloqueia com o rótulo oficial do YouTube (consulta assíncrona)
     if (vid && cfg.checkLabelInFeeds) {
       checkLabel(vid).then((ai) => {
-        if (!ai || el.dataset.aibVid !== vid || el.dataset.aibRevealed === "1") return;
-        blockCard(el, LABEL_REASON);
+        if (el.dataset.aibVid !== vid || el.dataset.aibRevealed === "1" || el.dataset.aibState) return;
         const info = labelInfo.get(vid);
-        const ch = cardChannel(el);
-        recordAiVideo(vid, (info?.ch.handle || info?.ch.name) ? info.ch : ch);
+        const infoCh = (info?.ch.handle || info?.ch.name) ? info.ch : null;
+        // A consulta também diz o canal, que nem sempre aparece na página
+        // (Shorts na busca): aplica as listas de canais com ele
+        const k = new Set(infoCh ? [norm(infoCh.handle), norm(infoCh.name)].filter(Boolean) : []);
+        if (anyIn(k, allowedSet)) return;
+        if (ai) {
+          blockCard(el, LABEL_REASON);
+          recordAiVideo(vid, infoCh || cardChannel(el));
+        } else if (anyIn(k, blockedSet)) {
+          blockCard(el, "canal bloqueado");
+        } else if (cfg.autoBlockChannels && anyIn(k, sharedBlockedSet)) {
+          blockCard(el, SHARED_CHANNEL_REASON);
+        }
       });
     }
   }
@@ -549,6 +602,7 @@
     }
 
     if (anyIn(keys, blockedSet)) blockWatch("canal bloqueado");
+    else if (cfg.autoBlockChannels && anyIn(keys, sharedBlockedSet)) blockWatch(SHARED_CHANNEL_REASON);
   }
 
   function pauseAll() {
@@ -664,5 +718,6 @@
   Promise.all([api.storage.local.get(null), loadCache()]).then(([s]) => {
     applyConfig(s);
     run();
+    refreshShared();
   });
 })();

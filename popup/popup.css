@@ -54,6 +54,8 @@ section {
 
 .note { margin: 0; color: #555; }
 
+.sub { display: block; color: #666; font-size: 12px; }
+
 .check input[type="number"] {
   width: 48px;
   margin: 0 2px;

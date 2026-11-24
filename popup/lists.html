@@ -16,6 +16,7 @@
     <button role="tab" data-tab="videos" aria-selected="true">Vídeos <span class="count" id="nVideos">0</span></button>
     <button role="tab" data-tab="channels" aria-selected="false">Canais <span class="count" id="nChannels">0</span></button>
     <button role="tab" data-tab="allowed" aria-selected="false">Vídeos liberados <span class="count" id="nAllowed">0</span></button>
+    <button role="tab" data-tab="share" aria-selected="false">Compartilhar <span class="count" id="nShare">0</span></button>
   </nav>
 
   <p id="msg" class="msg" role="status"></p>
@@ -65,6 +66,30 @@
       </table>
     </div>
     <p class="empty" id="allowedEmpty">Nenhum vídeo liberado.</p>
+  </section>
+
+  <section id="tab-share" class="panel" hidden>
+    <div class="card">
+      <h2>Lista compartilhada da comunidade</h2>
+      <p id="sharedStatus" class="hint"></p>
+      <p class="hint">Todos que usam a extensão recebem essa lista do GitHub. Ela só tem vídeos com o selo oficial
+        "Criado com IA", conferidos por um robô antes de entrar. Canais com mais de <span id="shareLimit">10</span>
+        vídeos na lista são bloqueados.</p>
+    </div>
+
+    <div class="card">
+      <h2>Contribuir</h2>
+      <p id="shareCount"></p>
+      <ol class="steps">
+        <li>Clique em <b>Enviar</b>. Abre o GitHub com a mensagem pronta (é preciso ter uma conta no GitHub, gratuita).</li>
+        <li>Lá, clique em <b>Create</b> (ou <b>Submit new issue</b>).</li>
+        <li>Em alguns minutos o robô confere cada vídeo no YouTube, adiciona os que têm o selo e responde na própria página.</li>
+      </ol>
+      <p class="warn"><b>Atenção à privacidade:</b> a contribuição é pública. Ela fica no GitHub com o seu nome de usuário e a
+        lista de vídeos enviados, que são vídeos que você viu no YouTube. Só são enviados os IDs dos vídeos: nada de
+        histórico completo, datas ou dados da sua conta.</p>
+      <button id="share" class="primary">Enviar para a lista compartilhada</button>
+    </div>
   </section>
 
   <script src="../src/defaults.js"></script>

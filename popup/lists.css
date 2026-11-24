@@ -105,6 +105,22 @@ a:hover { color: var(--accent); }
 
 .empty { color: var(--muted); text-align: center; padding: 24px 0; }
 
+.card {
+  margin-bottom: 14px; padding: 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+}
+.card h2 { margin: 0 0 6px; font-size: 16px; }
+.card p { margin: 6px 0; }
+.steps { margin: 8px 0; padding-left: 20px; }
+.steps li { margin: 4px 0; }
+.warn {
+  padding: 10px 12px; border-radius: 8px;
+  background: var(--chip-wait); color: var(--text); font-size: 13px;
+}
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+button.primary:hover { background: var(--accent-hover); }
+button:disabled { opacity: .5; cursor: default; }
+
 @media (max-width: 640px) {
   th:nth-child(4), td.when { display: none; }
 }

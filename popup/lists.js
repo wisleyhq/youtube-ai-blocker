@@ -1,4 +1,4 @@
-/* global AIB_DEFAULTS */
+/* global AIB_DEFAULTS, AIB_REPO_URL, AIB_SUBMIT_MAX */
 (() => {
   "use strict";
 
@@ -98,13 +98,27 @@
       rows.set(norm(entry), { handle: entry.startsWith("@") ? entry : "", name: entry.startsWith("@") ? "" : entry, count: 0 });
     });
 
+    const sharedN = sharedBlockedKeys();
     rows.forEach((r) => {
       const keys = [norm(r.handle), norm(r.name)].filter(Boolean);
       r.allowed = keys.some((k) => allowedN.has(k));
       r.blocked = !r.allowed && keys.some((k) => blockedN.has(k));
+      r.shared = !r.allowed && !r.blocked && keys.some((k) => sharedN.has(k));
       r.entry = r.handle || r.name;
     });
     return [...rows.values()];
+  }
+
+  // Canais bloqueados pela lista compartilhada (mesma regra do content script)
+  function sharedBlockedKeys() {
+    const out = new Set();
+    const on = (data.useSharedList ?? AIB_DEFAULTS.useSharedList) && (data.autoBlockChannels ?? AIB_DEFAULTS.autoBlockChannels);
+    if (!on) return out;
+    const limit = data.autoBlockThreshold ?? AIB_DEFAULTS.autoBlockThreshold;
+    Object.entries(data.sharedList?.channels || {}).forEach(([k, c]) => {
+      if ((c.videos?.length || 0) > limit) out.add(norm(k));
+    });
+    return out;
   }
 
   function renderChannels() {
@@ -120,14 +134,15 @@
     const rows = all
       .filter((r) => !q || norm(`${r.name} ${r.handle}`).includes(q))
       .filter((r) => f === "all" || (f === "blocked" && r.blocked) || (f === "allowed" && r.allowed) ||
-        (f === "pending" && !r.blocked && !r.allowed))
-      .sort((a, b) => (b.blocked - a.blocked) || (b.count - a.count) || norm(a.entry).localeCompare(norm(b.entry)));
+        (f === "blocked" && r.shared) || (f === "pending" && !r.blocked && !r.allowed && !r.shared))
+      .sort((a, b) => ((b.blocked || b.shared) - (a.blocked || a.shared)) || (b.count - a.count) || norm(a.entry).localeCompare(norm(b.entry)));
 
     $("nChannels").textContent = all.length;
     $("channelsBody").replaceChildren(...rows.map((r) => {
       let chip;
       if (r.allowed) chip = el("span", { class: "chip allow" }, "Sempre permitido");
       else if (r.blocked) chip = el("span", { class: "chip block" }, "Bloqueado");
+      else if (r.shared) chip = el("span", { class: "chip block" }, "Bloqueado pela comunidade");
       else {
         const left = Math.max(limit + 1 - r.count, 0);
         chip = el("span", { class: "chip wait" }, auto ? `Faltam ${left} para bloquear` : "Não bloqueado");
@@ -189,12 +204,64 @@
     msg("Vídeo removido dos liberados.");
   }
 
+  // ---------- compartilhar ----------
+
+  // Vídeos com selo vistos por você que ainda não estão na lista nem foram enviados
+  function shareCandidates() {
+    const inShared = new Set(Object.values(data.sharedList?.channels || {}).flatMap((c) => c.videos || []));
+    const sent = new Set(data.submittedVideos || []);
+    const mine = Object.values(data.aiChannels || {}).flatMap((c) => c.videos || []);
+    return [...new Set(mine)].filter((id) => !inShared.has(id) && !sent.has(id));
+  }
+
+  function renderShare() {
+    const list = data.sharedList;
+    const chans = Object.values(list?.channels || {});
+    const vids = chans.reduce((n, c) => n + (c.videos?.length || 0), 0);
+    const on = data.useSharedList ?? AIB_DEFAULTS.useSharedList;
+    $("sharedStatus").textContent = !on
+      ? "Desligada no painel da extensão."
+      : list?.updated
+        ? `${vids.toLocaleString("pt-BR")} vídeos de ${chans.length.toLocaleString("pt-BR")} canais. Atualizada em ${new Date(list.updated).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}.`
+        : "Ainda não foi baixada. Abra o YouTube com a extensão ligada.";
+
+    $("shareLimit").textContent = data.autoBlockThreshold ?? AIB_DEFAULTS.autoBlockThreshold;
+    const n = shareCandidates().length;
+    $("nShare").textContent = n;
+    $("shareCount").textContent = n
+      ? `Você encontrou ${n} vídeo(s) com o selo "Criado com IA" que ainda não estão na lista.${n > AIB_SUBMIT_MAX ? ` Serão enviados ${AIB_SUBMIT_MAX} por vez.` : ""}`
+      : "Nenhum vídeo novo para enviar. Continue usando o YouTube: os vídeos com selo que você encontrar aparecem aqui.";
+    $("share").disabled = n === 0;
+  }
+
+  async function share() {
+    const ids = shareCandidates().slice(0, AIB_SUBMIT_MAX);
+    if (!ids.length) return;
+    const body = [
+      "Contribuição enviada pela extensão Bloqueador de Vídeos de IA para YouTube.",
+      "",
+      "Um robô vai conferir cada vídeo no YouTube: só entram na lista os que têm o selo oficial \"Criado com IA\".",
+      "Não altere o bloco abaixo.",
+      "",
+      "```aib-ids",
+      ids.join(" "),
+      "```"
+    ].join("\n");
+    const url = `${AIB_REPO_URL}/issues/new?title=${encodeURIComponent(`[lista] ${ids.length} vídeo(s) com selo de IA`)}&body=${encodeURIComponent(body)}`;
+    await api.tabs.create({ url });
+    const { submittedVideos = [] } = await api.storage.local.get("submittedVideos");
+    // guarda os últimos 5000 enviados, para não mandar de novo
+    await api.storage.local.set({ submittedVideos: [...submittedVideos, ...ids].slice(-5000) });
+    msg(`Abri o GitHub com ${ids.length} vídeo(s). Falta clicar em "Create" lá.`);
+  }
+
   // ---------- geral ----------
 
   function render() {
     renderVideos();
     renderChannels();
     renderAllowed();
+    renderShare();
   }
 
   async function load() {
@@ -210,6 +277,8 @@
   $("qVideos").addEventListener("input", renderVideos);
   $("qChannels").addEventListener("input", renderChannels);
   $("fChannels").addEventListener("change", renderChannels);
+
+  $("share").addEventListener("click", share);
 
   $("clearHistory").addEventListener("click", async () => {
     if (!confirm("Apagar o histórico de vídeos bloqueados? As listas de canais continuam como estão.")) return;

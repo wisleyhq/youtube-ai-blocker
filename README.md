@@ -29,6 +29,16 @@ Quando um canal publica **mais de 10 vídeos diferentes** com o selo "Criado com
 - Só contam os vídeos que você viu no YouTube com a extensão ligada.
 - Você também pode bloquear um canal na hora: abra um vídeo dele e clique em **"Bloquear o canal do vídeo aberto"**.
 
+## Lista compartilhada da comunidade
+
+Todos que usam a extensão podem ajudar a montar uma lista única de vídeos e canais de IA, guardada neste repositório em [`lists/ai-list.json`](lists/ai-list.json).
+
+- **Receber:** a extensão baixa a lista do GitHub a cada 12 horas. Vídeos da lista são bloqueados na hora, e canais com mais de 10 vídeos nela são bloqueados para todos.
+- **Contribuir:** na página de listas, aba **Compartilhar**, clique em **"Enviar para a lista compartilhada"**. Abre o GitHub com uma mensagem pronta, e você só confirma (é preciso ter uma conta no GitHub, gratuita).
+- **Sem bagunça:** antes de entrar, um robô do GitHub confere **cada vídeo** direto no YouTube. Só entram os que têm o selo "Criado com IA". Ninguém consegue incluir um canal comum na lista.
+- **Privacidade:** a contribuição é pública e fica no GitHub com o seu nome de usuário, junto com os IDs dos vídeos enviados. Envie só se estiver de acordo.
+- Para não usar a lista, desligue **"Usar a lista compartilhada da comunidade"** no painel.
+
 ## Listas de vídeos e canais
 
 No painel da extensão, clique em **"Ver vídeos e canais bloqueados"**. Abre uma página com três abas:
@@ -38,6 +48,7 @@ No painel da extensão, clique em **"Ver vídeos e canais bloqueados"**. Abre um
 | **Vídeos** | Os últimos 1000 vídeos bloqueados: título, canal, motivo e data | Buscar, abrir o vídeo, **liberar** o vídeo, limpar o histórico |
 | **Canais** | Todos os canais com vídeos de IA, quantos vídeos com selo cada um tem e quantos faltam para o bloqueio | Bloquear agora, desbloquear, **sempre permitir** |
 | **Vídeos liberados** | Os vídeos que você liberou | Desfazer a liberação |
+| **Compartilhar** | O estado da lista compartilhada e quantos vídeos novos você encontrou | Enviar sua contribuição |
 
 Um canal **"sempre permitido"** nunca é bloqueado, nem mesmo pelo selo.
 
@@ -66,11 +77,13 @@ Clique no ícone da extensão:
 - **Conferir o selo nas miniaturas**: verifica cada vídeo das listas. Se desligado, só a página do vídeo aberto é verificada.
 - **Bloquear canais automaticamente** e a partir de quantos vídeos de IA.
 - **Tela de bloqueio** ao abrir um vídeo de IA.
+- **Lista compartilhada** da comunidade: ligar ou desligar.
 - Listas de **canais bloqueados** e **canais sempre permitidos**.
 
 ## Privacidade
 
-- Nada sai do seu computador, a não ser as consultas ao **próprio YouTube** para ler o selo de cada vídeo.
+- A extensão só se comunica com o **próprio YouTube**, para ler o selo de cada vídeo, e com o **GitHub**, para baixar a lista compartilhada. Esse download não envia nenhum dado seu.
+- Nada é enviado sem você clicar em **Enviar** e confirmar no GitHub.
 - Não há conta, servidor, rastreamento nem anúncios.
 - Configurações, listas e histórico ficam guardados só no seu Firefox.
 

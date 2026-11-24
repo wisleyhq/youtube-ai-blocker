@@ -5,7 +5,7 @@
   const api = globalThis.browser ?? globalThis.chrome;
   const $ = (id) => document.getElementById(id);
 
-  const CHECKS = ["enabled", "checkLabelInFeeds", "autoBlockChannels", "blockWatchPage"];
+  const CHECKS = ["enabled", "checkLabelInFeeds", "autoBlockChannels", "blockWatchPage", "useSharedList"];
   const LISTS = ["blockedChannels", "allowedChannels"];
 
   const toLines = (arr) => (arr || []).join("\n");
@@ -27,9 +27,21 @@
     $("total").textContent = (stats?.total || 0).toLocaleString("pt-BR");
   }
 
+  function fillShared(list) {
+    const chans = Object.values(list?.channels || {});
+    if (!list?.updated) {
+      $("sharedInfo").textContent = "(ainda não baixada)";
+      return;
+    }
+    const vids = chans.reduce((n, c) => n + (c.videos?.length || 0), 0);
+    const when = new Date(list.updated).toLocaleDateString("pt-BR");
+    $("sharedInfo").textContent = `${vids.toLocaleString("pt-BR")} vídeos de ${chans.length.toLocaleString("pt-BR")} canais, atualizada em ${when}`;
+  }
+
   async function load() {
     const s = await api.storage.local.get(null);
     fill({ ...AIB_DEFAULTS, ...s }, s.stats);
+    fillShared(s.sharedList);
   }
 
   function collect() {
