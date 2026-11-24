@@ -52,6 +52,17 @@ section {
 
 .check input { margin-top: 2px; }
 
+.note { margin: 0; color: #555; }
+
+.check input[type="number"] {
+  width: 48px;
+  margin: 0 2px;
+  padding: 1px 4px;
+  font: inherit;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
 details {
   margin-bottom: 10px;
 }

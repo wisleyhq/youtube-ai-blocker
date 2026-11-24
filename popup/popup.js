@@ -5,8 +5,8 @@
   const api = globalThis.browser ?? globalThis.chrome;
   const $ = (id) => document.getElementById(id);
 
-  const CHECKS = ["enabled", "useOfficialLabel", "checkLabelInFeeds", "strictMode", "autoBlockChannels", "blockWatchPage"];
-  const LISTS = ["keywords", "blockedChannels", "allowedChannels"];
+  const CHECKS = ["enabled", "checkLabelInFeeds", "autoBlockChannels", "blockWatchPage"];
+  const LISTS = ["blockedChannels", "allowedChannels"];
 
   const toLines = (arr) => (arr || []).join("\n");
   const fromLines = (txt) => [...new Set(txt.split("\n").map((s) => s.trim()).filter(Boolean))];
@@ -21,6 +21,7 @@
   function fill(cfg, stats) {
     CHECKS.forEach((k) => { $(k).checked = !!cfg[k]; });
     $("mode").value = cfg.mode;
+    $("autoBlockThreshold").value = cfg.autoBlockThreshold;
     LISTS.forEach((k) => { $(k).value = toLines(cfg[k]); });
     $("nBlocked").textContent = (cfg.blockedChannels || []).length;
     $("total").textContent = (stats?.total || 0).toLocaleString("pt-BR");
@@ -32,7 +33,11 @@
   }
 
   function collect() {
-    const out = { mode: $("mode").value };
+    const n = parseInt($("autoBlockThreshold").value, 10);
+    const out = {
+      mode: $("mode").value,
+      autoBlockThreshold: Number.isFinite(n) && n >= 0 ? n : AIB_DEFAULTS.autoBlockThreshold
+    };
     CHECKS.forEach((k) => { out[k] = $(k).checked; });
     LISTS.forEach((k) => { out[k] = fromLines($(k).value); });
     return out;
@@ -45,13 +50,18 @@
   }
 
   // Os interruptores e o modo salvam na hora
-  [...CHECKS, "mode"].forEach((k) => $(k).addEventListener("change", save));
+  [...CHECKS, "mode", "autoBlockThreshold"].forEach((k) => $(k).addEventListener("change", save));
   $("save").addEventListener("click", save);
 
+  $("openLists").addEventListener("click", async () => {
+    await api.tabs.create({ url: api.runtime.getURL("popup/lists.html") });
+    window.close();
+  });
+
   $("reset").addEventListener("click", async () => {
-    const { blockedChannels = [], allowedChannels = [], stats } = await api.storage.local.get(null);
-    // Restaura opções e palavras-chave, mas mantém as listas de canais
-    const cfg = { ...AIB_DEFAULTS, blockedChannels, allowedChannels };
+    const { blockedChannels = [], allowedChannels = [], allowedVideos = [], stats } = await api.storage.local.get(null);
+    // Restaura as opções, mas mantém as listas de canais e vídeos
+    const cfg = { ...AIB_DEFAULTS, blockedChannels, allowedChannels, allowedVideos };
     await api.storage.local.set(cfg);
     fill(cfg, stats);
     msg("Padrões restaurados (listas de canais mantidas).");

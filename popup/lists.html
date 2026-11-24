@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vídeos e canais bloqueados</title>
+  <link rel="stylesheet" href="lists.css">
+</head>
+<body>
+  <header>
+    <img src="../icons/icon.svg" alt="" width="32" height="32">
+    <h1>Vídeos e canais bloqueados</h1>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="videos" aria-selected="true">Vídeos <span class="count" id="nVideos">0</span></button>
+    <button role="tab" data-tab="channels" aria-selected="false">Canais <span class="count" id="nChannels">0</span></button>
+    <button role="tab" data-tab="allowed" aria-selected="false">Vídeos liberados <span class="count" id="nAllowed">0</span></button>
+  </nav>
+
+  <p id="msg" class="msg" role="status"></p>
+
+  <section id="tab-videos" class="panel">
+    <div class="toolbar">
+      <input type="search" id="qVideos" placeholder="Buscar por título, canal ou motivo">
+      <button id="clearHistory" class="danger">Limpar histórico</button>
+    </div>
+    <p class="hint">Vídeos que a extensão bloqueou, do mais recente ao mais antigo (guarda os últimos 1000).
+      "Liberar" faz o vídeo nunca mais ser bloqueado.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Vídeo</th><th>Canal</th><th>Motivo</th><th>Visto em</th><th></th></tr></thead>
+        <tbody id="videosBody"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="videosEmpty">Nenhum vídeo bloqueado ainda.</p>
+  </section>
+
+  <section id="tab-channels" class="panel" hidden>
+    <div class="toolbar">
+      <input type="search" id="qChannels" placeholder="Buscar canal">
+      <select id="fChannels">
+        <option value="all">Todos</option>
+        <option value="blocked">Só bloqueados</option>
+        <option value="pending">Ainda não bloqueados</option>
+        <option value="allowed">Sempre permitidos</option>
+      </select>
+    </div>
+    <p class="hint" id="channelsHint"></p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Canal</th><th class="num">Vídeos com rótulo de IA</th><th>Situação</th><th></th></tr></thead>
+        <tbody id="channelsBody"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="channelsEmpty">Nenhum canal ainda.</p>
+  </section>
+
+  <section id="tab-allowed" class="panel" hidden>
+    <p class="hint">Vídeos que você liberou. Eles nunca são bloqueados, mesmo com o selo de IA ou com o canal bloqueado.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Vídeo</th><th></th></tr></thead>
+        <tbody id="allowedBody"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="allowedEmpty">Nenhum vídeo liberado.</p>
+  </section>
+
+  <script src="../src/defaults.js"></script>
+  <script src="lists.js"></script>
+</body>
+</html>

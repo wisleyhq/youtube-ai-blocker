@@ -1,47 +1,92 @@
-# Bloqueador de Vídeos de IA para YouTube (Firefox)
+# Bloqueador de Vídeos de IA para YouTube
 
-Extensão que oculta ou desfoca vídeos gerados por IA no YouTube: página inicial, busca, inscrições, recomendações laterais, Shorts e a própria página do vídeo.
+Extensão para o **Firefox** que esconde do YouTube os vídeos gerados por inteligência artificial.
 
-## Como detecta
+Ela funciona na página inicial, na busca, em Inscrições, nas recomendações ao lado do vídeo, nos Shorts e na própria página do vídeo.
 
-1. **Rótulo oficial do YouTube** — quando o criador declara que o vídeo foi "alterado ou totalmente gerado por IA", o YouTube mostra o selo **"Criado com IA"** na seção "Como este conteúdo foi criado". A extensão:
-   - lê esse rótulo na página do vídeo/Short e mostra a tela de bloqueio;
-   - consulta o rótulo também para as miniaturas dos feeds (API interna do YouTube, 1 consulta por vídeo, com cache);
-   - (opcional) adiciona o canal à lista de bloqueio, para os próximos vídeos dele sumirem direto.
-   - Rótulos que não são de IA na mesma seção, como "Dublagem automática", são ignorados.
-2. **Palavras-chave** no título/metadados (ex.: "gerado por IA", "#aiart", "Sora 2", "Veo 3", "Midjourney"). Editáveis no painel.
-   - Siglas curtas em maiúsculas (ex.: `IA`, `AI`) diferenciam maiúsculas, para não bloquear "eu ia ao mercado".
-   - **Modo rigoroso** (ligado por padrão): bloqueia títulos com "AI", "Ai" ou "IA" soltos. Pega bem mais vídeos de IA, mas também vídeos que só falam sobre IA.
-3. **Lista de canais bloqueados** — `@handle` ou nome do canal. O botão "Bloquear o canal do vídeo aberto" adiciona o canal da aba atual.
-4. **Canais sempre permitidos** — nunca são bloqueados (para evitar falsos positivos).
+## Por que confiar no bloqueio
 
-Resultados dos testes em páginas reais: veja [TESTES.md](TESTES.md).
+A extensão **só bloqueia o que o próprio YouTube marca como IA**. Ela não tenta adivinhar pelo título, pela miniatura ou por palavras como "AI".
 
-## Instalar para testar (temporário)
+Quando um criador publica um vídeo feito ou alterado com IA, ele precisa declarar isso ao YouTube. O vídeo então ganha o selo **"Criado com IA"**, na seção *"Como este conteúdo foi criado"* da descrição. A extensão lê esse selo.
 
-1. Abra `about:debugging#/runtime/this-firefox`
-2. Clique em **Carregar extensão temporária…**
-3. Selecione o arquivo `manifest.json` da pasta (ou o `.xpi`)
-4. Abra o YouTube e recarregue a página
+Na prática:
 
-A extensão temporária some quando o Firefox fecha.
+- Um vídeo que só **fala** sobre IA (notícia, tutorial, review) **não** é bloqueado, a menos que o criador o tenha marcado.
+- Outros avisos da mesma seção, como **"Dublagem automática"**, são ignorados.
+- Um vídeo de IA que o criador **não** declarou passa, porque o YouTube não o marca.
 
-## Instalar de forma permanente
+## O que acontece com um vídeo de IA
 
-O Firefox normal só instala extensões assinadas pela Mozilla:
+- **Nas listas de vídeos** (início, busca, recomendações): o vídeo some. Se preferir, ele pode aparecer desfocado, com um aviso que você clica para mostrar.
+- **Ao abrir o vídeo ou Short**: aparece uma tela de bloqueio e o vídeo fica pausado. Você pode **voltar**, ir para o **início** ou **assistir mesmo assim**.
 
-- **Assinatura gratuita (recomendado)** — crie uma conta em https://addons.mozilla.org/developers/, envie o `.xpi` como **"Por conta própria" (unlisted)**. A assinatura sai em minutos e você baixa o `.xpi` assinado para instalar arrastando no Firefox.
-- **Firefox Developer Edition / Nightly** — em `about:config`, defina `xpinstall.signatures.required` como `false` e instale o `.xpi` direto.
+## Bloqueio de canais
 
-## Estrutura
+Quando um canal publica **mais de 10 vídeos diferentes** com o selo "Criado com IA", ele entra sozinho na sua lista de canais bloqueados. A partir daí, todos os vídeos dele somem.
 
-```
-manifest.json         Manifest V3 (Firefox 142+)
-src/defaults.js       Configuração padrão e textos do rótulo oficial
-src/content.js        Detecção e bloqueio nas páginas do YouTube
-src/content.css       Estilos de ocultar/desfocar e tela de bloqueio
-popup/                Painel de configurações
-icons/icon.svg        Ícone
-```
+- O número 10 pode ser mudado no painel. O bloqueio automático também pode ser desligado.
+- Só contam os vídeos que você viu no YouTube com a extensão ligada.
+- Você também pode bloquear um canal na hora: abra um vídeo dele e clique em **"Bloquear o canal do vídeo aberto"**.
 
-Configurações, listas e cache ficam em `storage.local`. A única comunicação externa é com o próprio YouTube, para ler o rótulo dos vídeos.
+## Listas de vídeos e canais
+
+No painel da extensão, clique em **"Ver vídeos e canais bloqueados"**. Abre uma página com três abas:
+
+| Aba | O que mostra | O que dá para fazer |
+|---|---|---|
+| **Vídeos** | Os últimos 1000 vídeos bloqueados: título, canal, motivo e data | Buscar, abrir o vídeo, **liberar** o vídeo, limpar o histórico |
+| **Canais** | Todos os canais com vídeos de IA, quantos vídeos com selo cada um tem e quantos faltam para o bloqueio | Bloquear agora, desbloquear, **sempre permitir** |
+| **Vídeos liberados** | Os vídeos que você liberou | Desfazer a liberação |
+
+Um canal **"sempre permitido"** nunca é bloqueado, nem mesmo pelo selo.
+
+## Instalar
+
+### Para testar (some quando o Firefox fecha)
+
+1. Baixe este repositório: botão verde **Code → Download ZIP**, e descompacte.
+2. No Firefox, abra `about:debugging#/runtime/this-firefox`.
+3. Clique em **"Carregar extensão temporária…"** e escolha o arquivo `manifest.json` da pasta.
+4. Abra ou recarregue o YouTube.
+
+### Para usar sempre
+
+O Firefox comum só instala extensões assinadas pela Mozilla. A extensão ainda não está publicada na loja de complementos. O arquivo `.xpi` será disponibilizado na página [Releases](https://github.com/wisleyhq/youtube-ai-blocker/releases). Enquanto isso:
+
+- **Firefox Developer Edition ou Nightly**: em `about:config`, mude `xpinstall.signatures.required` para `false`. Depois instale o arquivo `.xpi`.
+- **Assinatura própria, de graça**: crie uma conta em <https://addons.mozilla.org/developers/> e envie o `.xpi` como **"Por conta própria"**. Em poucos minutos você baixa o arquivo assinado e instala arrastando para o Firefox.
+
+## Configurações
+
+Clique no ícone da extensão:
+
+- **Liga/desliga** geral.
+- **Ocultar** ou **desfocar** os vídeos detectados.
+- **Conferir o selo nas miniaturas**: verifica cada vídeo das listas. Se desligado, só a página do vídeo aberto é verificada.
+- **Bloquear canais automaticamente** e a partir de quantos vídeos de IA.
+- **Tela de bloqueio** ao abrir um vídeo de IA.
+- Listas de **canais bloqueados** e **canais sempre permitidos**.
+
+## Privacidade
+
+- Nada sai do seu computador, a não ser as consultas ao **próprio YouTube** para ler o selo de cada vídeo.
+- Não há conta, servidor, rastreamento nem anúncios.
+- Configurações, listas e histórico ficam guardados só no seu Firefox.
+
+## Perguntas frequentes
+
+**Um vídeo de IA não foi bloqueado. Por quê?**
+Provavelmente o criador não declarou o vídeo como IA, então o YouTube não mostra o selo. A extensão só bloqueia vídeos com o selo, para não esconder nada por engano. Se o canal te incomoda, bloqueie o canal pelo painel.
+
+**Um vídeo foi bloqueado, mas eu quero assistir.**
+Na tela de bloqueio, clique em **"Assistir mesmo assim"**. Para liberar de vez, use **"Liberar"** na lista de vídeos.
+
+**Por que o YouTube ficou um pouco mais lento?**
+Com "Conferir o selo nas miniaturas" ligado, a extensão consulta o YouTube uma vez por vídeo, no máximo 2 de cada vez. O resultado fica guardado. Se quiser, desligue essa opção.
+
+## Problemas e sugestões
+
+Abra uma [issue](https://github.com/wisleyhq/youtube-ai-blocker/issues) contando o que aconteceu. Se for o caso, informe o link do vídeo.
+
+Os resultados dos testes estão em [TESTES.md](TESTES.md).

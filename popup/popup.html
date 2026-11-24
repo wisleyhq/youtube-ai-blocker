@@ -25,22 +25,17 @@
         <option value="blur">Desfocar com aviso</option>
       </select>
     </label>
-    <label class="check"><input type="checkbox" id="useOfficialLabel"> Usar o rótulo oficial do YouTube ("Criado com IA")</label>
-    <label class="check"><input type="checkbox" id="checkLabelInFeeds"> Conferir o rótulo também nas miniaturas (consulta o YouTube vídeo a vídeo)</label>
-    <label class="check"><input type="checkbox" id="strictMode"> Modo rigoroso: bloquear títulos com "AI" ou "IA" soltos (inclui vídeos que só falam sobre IA)</label>
-    <label class="check"><input type="checkbox" id="autoBlockChannels"> Bloquear automaticamente o canal de vídeos com esse rótulo</label>
+    <p class="note">Só bloqueia vídeos com o selo oficial do YouTube <b>"Criado com IA"</b>, declarado pelo próprio criador.</p>
+    <label class="check"><input type="checkbox" id="checkLabelInFeeds"> Conferir o selo também nas miniaturas (consulta o YouTube vídeo a vídeo)</label>
+    <label class="check"><input type="checkbox" id="autoBlockChannels"> <span>Bloquear automaticamente o canal com mais de <input type="number" id="autoBlockThreshold" min="0" max="999" step="1"> vídeos com esse rótulo</span></label>
     <label class="check"><input type="checkbox" id="blockWatchPage"> Mostrar tela de bloqueio ao abrir um vídeo ou Short de IA</label>
   </section>
 
   <section>
+    <button id="openLists" class="wide">Ver vídeos e canais bloqueados</button>
     <button id="blockCurrent" class="wide">Bloquear o canal do vídeo aberto</button>
     <p id="msg" class="msg"></p>
   </section>
-
-  <details open>
-    <summary>Palavras-chave (uma por linha)</summary>
-    <textarea id="keywords" rows="7" spellcheck="false"></textarea>
-  </details>
 
   <details>
     <summary>Canais bloqueados (<span id="nBlocked">0</span>)</summary>

@@ -1,19 +1,31 @@
 {
   "manifest_version": 3,
   "name": "Bloqueador de Vídeos de IA para YouTube",
-  "version": "1.1.0",
-  "description": "Oculta ou desfoca vídeos gerados por IA no YouTube usando o rótulo oficial de conteúdo sintético, palavras-chave e lista de canais.",
+  "version": "1.2.0",
+  "description": "Oculta ou desfoca no YouTube os vídeos com o selo oficial \"Criado com IA\" e bloqueia canais com muitos vídeos assim.",
   "icons": {
     "48": "icons/icon.svg",
     "96": "icons/icon.svg"
   },
-  "permissions": ["storage"],
-  "host_permissions": ["*://*.youtube.com/*"],
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["*://www.youtube.com/*", "*://m.youtube.com/*"],
-      "js": ["src/defaults.js", "src/content.js"],
-      "css": ["src/content.css"],
+      "matches": [
+        "*://www.youtube.com/*",
+        "*://m.youtube.com/*"
+      ],
+      "js": [
+        "src/defaults.js",
+        "src/content.js"
+      ],
+      "css": [
+        "src/content.css"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -27,7 +39,9 @@
       "id": "bloqueador-ia-youtube@wisley.local",
       "strict_min_version": "142.0",
       "data_collection_permissions": {
-        "required": ["none"]
+        "required": [
+          "none"
+        ]
       }
     }
   }

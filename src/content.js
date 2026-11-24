@@ -1,4 +1,4 @@
-/* global AIB_DEFAULTS, AIB_LABEL_PHRASES, AIB_LABEL_HELP_IDS */
+/* global AIB_DEFAULTS, AIB_LABEL_PHRASES, AIB_LABEL_HELP_IDS, AIB_HISTORY_MAX */
 (() => {
   "use strict";
 
@@ -33,13 +33,10 @@
     "h3"
   ].join(",");
 
-  // "AI", "Ai" ou "IA" como palavra solta (diferencia maiúsculas: não pega "ia" de "eu ia")
-  const STRICT_RE = /(?<![\p{L}\p{N}_])(AI|Ai|IA)(?![\p{L}\p{N}_])/u;
-
   let cfg = { ...AIB_DEFAULTS };
-  let keywordRegexes = [];
   let blockedSet = new Set();
   let allowedSet = new Set();
+  let allowedVideoSet = new Set();
 
   // Estado da página de vídeo atual
   const watch = { id: null, blocked: false, allowed: false, reason: "", checking: false };
@@ -48,25 +45,11 @@
 
   const norm = (s) => (s || "").trim().toLowerCase().replace(/\s+/g, " ");
 
-  function buildRegex(kw) {
-    kw = kw.trim();
-    if (!kw) return null;
-    // Siglas curtas em maiúsculas (ex.: "IA", "AI") diferenciam maiúsculas,
-    // para não confundir "IA" com o verbo "ia".
-    const caseSensitive = kw.length <= 3 && kw === kw.toUpperCase() && /\p{Lu}/u.test(kw);
-    const esc = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    try {
-      return new RegExp(`(?<![\\p{L}\\p{N}_])${esc}(?![\\p{L}\\p{N}_])`, caseSensitive ? "u" : "iu");
-    } catch {
-      return null;
-    }
-  }
-
   function applyConfig(stored) {
     cfg = { ...AIB_DEFAULTS, ...stored };
-    keywordRegexes = (cfg.keywords || []).map(buildRegex).filter(Boolean);
     blockedSet = new Set((cfg.blockedChannels || []).map(norm).filter(Boolean));
     allowedSet = new Set((cfg.allowedChannels || []).map(norm).filter(Boolean));
+    allowedVideoSet = new Set((cfg.allowedVideos || []).map((s) => String(s).trim()).filter(Boolean));
   }
 
   function handleFromHref(href) {
@@ -116,12 +99,6 @@
 
   const anyIn = (keys, set) => [...keys].some((k) => set.has(k));
 
-  function matchKeyword(text) {
-    for (const re of keywordRegexes) if (re.test(text)) return "palavra-chave";
-    if (cfg.strictMode && STRICT_RE.test(text)) return "menção a IA no título";
-    return null;
-  }
-
   // ---------- rótulo oficial via API interna do YouTube ----------
 
   const labelCache = new Map(); // id -> true/false
@@ -163,19 +140,34 @@
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    // Procura a seção "Como este conteúdo foi criado" na resposta
+    // Procura a seção "Como este conteúdo foi criado", o título e o canal na resposta
     const sections = [];
+    let owner = null;
+    let primary = null;
     const stack = [data];
     while (stack.length) {
       const o = stack.pop();
       if (!o || typeof o !== "object") continue;
       for (const k in o) {
         if (k === "howThisWasMadeSectionViewModel") sections.push(o[k]);
-        else if (o[k] && typeof o[k] === "object") stack.push(o[k]);
+        else if (k === "videoOwnerRenderer" && !owner) owner = o[k];
+        else if (k === "videoPrimaryInfoRenderer" && !primary) primary = o[k];
+        if (o[k] && typeof o[k] === "object") stack.push(o[k]);
       }
     }
-    return sections.some((s) => sectionHasAiLabel(JSON.stringify(s)));
+    const runsText = (x) => (x?.runs || []).map((r) => r.text).join("") || x?.simpleText || "";
+    const ownerRun = owner?.title?.runs?.[0];
+    const base = ownerRun?.navigationEndpoint?.browseEndpoint?.canonicalBaseUrl ||
+                 owner?.navigationEndpoint?.browseEndpoint?.canonicalBaseUrl || "";
+    return {
+      ai: sections.some((s) => sectionHasAiLabel(JSON.stringify(s))),
+      title: runsText(primary?.title).trim(),
+      ch: { handle: handleFromHref(base), name: runsText(owner?.title).trim() }
+    };
   }
+
+  // Título e canal dos vídeos consultados nesta página (não vão para o cache)
+  const labelInfo = new Map(); // id -> { title, ch }
 
   // Fila com no máximo 2 consultas simultâneas
   const queue = [];
@@ -205,7 +197,8 @@
       const id = queue.shift();
       active++;
       fetchLabel(id)
-        .then((ai) => {
+        .then(({ ai, title, ch }) => {
+          labelInfo.set(id, { title, ch });
           labelCache.set(id, ai);
           saveCacheSoon();
           return ai;
@@ -249,7 +242,118 @@
     await api.storage.local.set({ blockedChannels });
   }
 
+  // ---------- histórico de vídeos e contagem por canal ----------
+  // blockedVideos: { id: { title, channel, handle, reason, shorts, first, last } }
+  // aiChannels:    { chave: { handle, name, videos: [ids com o rótulo de IA] } }
+
+  const pendingHistory = new Map();
+  const pendingAi = new Map();
+  let recordTimer = null;
+
+  // Grava no máximo 1,5 s depois do primeiro registro (sem adiar a cada novo)
+  function recordSoon() {
+    if (recordTimer) return;
+    recordTimer = setTimeout(() => {
+      recordTimer = null;
+      flushRecords();
+    }, 1500);
+  }
+
+  // Não perde o que está pendente ao fechar ou trocar de aba
+  const flushNow = () => {
+    clearTimeout(recordTimer);
+    recordTimer = null;
+    flushRecords();
+  };
+  window.addEventListener("pagehide", flushNow);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) flushNow(); });
+
+  function recordBlocked(id, { title = "", ch = {}, reason = "", shorts = false }) {
+    if (!id) return;
+    const prev = pendingHistory.get(id) || {};
+    pendingHistory.set(id, {
+      title: title || prev.title || "",
+      channel: ch.name || prev.channel || "",
+      handle: ch.handle || prev.handle || "",
+      reason: reason || prev.reason || "",
+      shorts: shorts || prev.shorts || false
+    });
+    recordSoon();
+  }
+
+  function recordAiVideo(id, ch) {
+    if (!id || !ch || !(ch.handle || ch.name)) return;
+    pendingAi.set(id, ch);
+    recordSoon();
+  }
+
+  function findChannelKey(channels, ch) {
+    const h = norm(ch.handle);
+    const n = norm(ch.name);
+    if (h && channels[h]) return h;
+    // mesmo canal visto antes só pelo nome (ou só pelo @handle)
+    for (const [k, c] of Object.entries(channels)) {
+      if ((h && norm(c.handle) === h) || (n && norm(c.name) === n)) return k;
+    }
+    return h || n;
+  }
+
+  // Uma gravação por vez, para uma não sobrescrever a outra
+  let flushChain = Promise.resolve();
+  function flushRecords() {
+    flushChain = flushChain.then(writeRecords).catch(() => {});
+    return flushChain;
+  }
+
+  async function writeRecords() {
+    if (!pendingHistory.size && !pendingAi.size) return;
+    const hist = new Map(pendingHistory);
+    const ai = new Map(pendingAi);
+    pendingHistory.clear();
+    pendingAi.clear();
+
+    const { blockedVideos = {}, aiChannels = {} } = await api.storage.local.get(["blockedVideos", "aiChannels"]);
+    const now = Date.now();
+
+    hist.forEach((e, id) => {
+      const old = blockedVideos[id] || {};
+      blockedVideos[id] = {
+        title: e.title || old.title || "",
+        channel: e.channel || old.channel || "",
+        handle: e.handle || old.handle || "",
+        reason: e.reason || old.reason || "",
+        shorts: e.shorts || old.shorts || false,
+        first: old.first || now,
+        last: now
+      };
+    });
+    const ids = Object.keys(blockedVideos);
+    if (ids.length > AIB_HISTORY_MAX) {
+      ids.sort((a, b) => (blockedVideos[a].last || 0) - (blockedVideos[b].last || 0))
+        .slice(0, ids.length - AIB_HISTORY_MAX)
+        .forEach((id) => delete blockedVideos[id]);
+    }
+
+    const reached = [];
+    ai.forEach((ch, id) => {
+      const key = findChannelKey(aiChannels, ch);
+      if (!key) return;
+      const c = aiChannels[key] || (aiChannels[key] = { handle: "", name: "", videos: [] });
+      c.handle = c.handle || ch.handle || "";
+      c.name = c.name || ch.name || "";
+      if (!c.videos.includes(id)) c.videos.push(id);
+      if (c.videos.length > (cfg.autoBlockThreshold ?? 10)) reached.push(c);
+    });
+
+    await api.storage.local.set({ blockedVideos, aiChannels });
+    if (cfg.autoBlockChannels) {
+      for (const c of reached) await autoBlockChannel(c);
+    }
+  }
+
   // ---------- cartões nos feeds ----------
+
+  const LABEL_REASON = "selo oficial \"Criado com IA\" do YouTube";
 
   function clearCard(el) {
     delete el.dataset.aibState;
@@ -262,12 +366,33 @@
   function blockCard(el, reason) {
     if (el.dataset.aibState) return;
     bumpCounter();
+    const vid = el.dataset.aibVid;
+    if (vid) {
+      const info = labelInfo.get(vid);
+      const ch = cardChannel(el);
+      recordBlocked(vid, {
+        title: el.dataset.aibSig || info?.title,
+        ch: { handle: ch.handle || info?.ch.handle, name: ch.name || info?.ch.name },
+        reason,
+        shorts: !!el.querySelector('a[href*="/shorts/"]')
+      });
+      // Bloqueado pela lista de canais: consulta o rótulo mesmo assim, para
+      // completar o histórico e contar os vídeos de IA do canal
+      if (reason !== LABEL_REASON && cfg.checkLabelInFeeds) {
+        checkLabel(vid).then((ai) => {
+          const got = labelInfo.get(vid);
+          const hasCh = !!(got?.ch.handle || got?.ch.name);
+          if (hasCh) recordBlocked(vid, { title: got.title, ch: got.ch });
+          if (ai) recordAiVideo(vid, hasCh ? got.ch : ch);
+        });
+      }
+    }
     if (cfg.mode === "blur") {
       el.dataset.aibState = "blur";
       const badge = document.createElement("div");
       badge.className = "aib-badge";
       const strong = document.createElement("strong");
-      strong.textContent = "Possível vídeo de IA";
+      strong.textContent = "Vídeo de IA";
       const small = document.createElement("span");
       small.textContent = `(${reason}) — clique para mostrar`;
       badge.append(strong, small);
@@ -295,31 +420,29 @@
     const vidLink = el.querySelector('a[href*="/watch?v="], a[href*="/shorts/"]');
     const vid = videoIdFromHref(vidLink?.getAttribute("href"));
     if (vid) el.dataset.aibVid = vid;
+    if (vid && allowedVideoSet.has(vid)) return;
 
-    const text = `${title}\n${el.innerText || el.textContent || ""}`;
     const keys = channelKeys(el);
     // nomes de canal no layout novo aparecem como linhas de texto soltas
-    text.split("\n").forEach((line) => {
+    (el.innerText || el.textContent || "").split("\n").forEach((line) => {
       const t = norm(line);
       if (t && t.length < 80) keys.add(t);
     });
 
     if (anyIn(keys, allowedSet)) return;
-
-    let reason = null;
-    if (anyIn(keys, blockedSet)) reason = "canal bloqueado";
-    else reason = matchKeyword(text);
-    if (reason) {
-      blockCard(el, reason);
+    if (anyIn(keys, blockedSet)) {
+      blockCard(el, "canal bloqueado");
       return;
     }
 
-    // Nada no texto: consulta o rótulo oficial (assíncrono)
-    if (vid && cfg.useOfficialLabel && cfg.checkLabelInFeeds) {
+    // Só bloqueia com o rótulo oficial do YouTube (consulta assíncrona)
+    if (vid && cfg.checkLabelInFeeds) {
       checkLabel(vid).then((ai) => {
         if (!ai || el.dataset.aibVid !== vid || el.dataset.aibRevealed === "1") return;
-        blockCard(el, "rótulo oficial do YouTube");
-        if (cfg.autoBlockChannels) autoBlockChannel(cardChannel(el));
+        blockCard(el, LABEL_REASON);
+        const info = labelInfo.get(vid);
+        const ch = cardChannel(el);
+        recordAiVideo(vid, (info?.ch.handle || info?.ch.name) ? info.ch : ch);
       });
     }
   }
@@ -365,15 +488,28 @@
     return { handle, name };
   }
 
+  function watchTitle(c = watchContainer()) {
+    return (document.querySelector("ytd-watch-metadata h1")?.textContent ||
+            c.querySelector("h2, .ytShortsVideoTitleViewModelShortsVideoTitle")?.textContent ||
+            "").trim();
+  }
+
   function blockWatch(reason, isLabel) {
     if (watch.blocked || watch.allowed) return;
     watch.blocked = true;
     watch.reason = reason;
     bumpCounter();
-    if (isLabel && cfg.autoBlockChannels) {
-      // espera o nome do canal aparecer na página
-      setTimeout(() => autoBlockChannel(currentChannel()), 1500);
-    }
+    const id = watch.id;
+    const shorts = location.pathname.startsWith("/shorts/");
+    // espera o título e o canal aparecerem na página
+    setTimeout(() => {
+      const info = labelInfo.get(id);
+      const samePage = watch.id === id;
+      const pageCh = samePage ? currentChannel() : {};
+      const ch = (info?.ch.handle || info?.ch.name) ? info.ch : pageCh;
+      recordBlocked(id, { title: (samePage && watchTitle()) || info?.title, ch, reason, shorts });
+      if (isLabel) recordAiVideo(id, ch);
+    }, 1500);
     if (cfg.blockWatchPage) showWall(reason);
   }
 
@@ -388,33 +524,31 @@
       Object.assign(watch, { id, blocked: false, allowed: false, reason: "", checking: false });
       removeWall();
     }
-    if (watch.allowed || watch.blocked) return;
+    if (watch.allowed || watch.blocked || allowedVideoSet.has(id)) return;
 
     const c = watchContainer();
     const keys = channelKeys(c, "ytd-channel-name #text, .ytReelChannelBarViewModelChannelName");
     if (anyIn(keys, allowedSet)) return;
 
-    if (cfg.useOfficialLabel) {
-      if (domHasLabel(c)) {
-        blockWatch("rótulo oficial do YouTube: criado com IA", true);
-        return;
-      }
-      if (!watch.checking) {
-        watch.checking = true;
-        checkLabel(id).then((ai) => {
-          if (ai && watch.id === id) blockWatch("rótulo oficial do YouTube: criado com IA", true);
-        });
-      }
+    if (domHasLabel(c)) {
+      blockWatch(LABEL_REASON, true);
+      return;
+    }
+    if (!watch.checking) {
+      watch.checking = true;
+      checkLabel(id).then((ai) => {
+        if (!ai || watch.id !== id) return;
+        if (!watch.blocked) {
+          blockWatch(LABEL_REASON, true);
+          return;
+        }
+        // Já bloqueado pela lista de canais: só conta o vídeo de IA do canal
+        const info = labelInfo.get(id);
+        recordAiVideo(id, (info?.ch.handle || info?.ch.name) ? info.ch : currentChannel());
+      });
     }
 
-    const title = (document.querySelector("ytd-watch-metadata h1")?.textContent ||
-                   c.querySelector("h2, .ytShortsVideoTitleViewModelShortsVideoTitle")?.textContent ||
-                   "").trim();
     if (anyIn(keys, blockedSet)) blockWatch("canal bloqueado");
-    else if (title) {
-      const r = matchKeyword(title);
-      if (r) blockWatch(`${r} no título`);
-    }
   }
 
   function pauseAll() {
@@ -499,7 +633,7 @@
   document.addEventListener("yt-navigate-finish", schedule);
   window.addEventListener("popstate", schedule);
 
-  const IGNORED_KEYS = new Set(["stats", "labelCache"]);
+  const IGNORED_KEYS = new Set(["stats", "labelCache", "blockedVideos", "aiChannels"]);
   api.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
     const keys = Object.keys(changes).filter((k) => !IGNORED_KEYS.has(k));

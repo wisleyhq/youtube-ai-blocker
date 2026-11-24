@@ -1,98 +1,31 @@
-// Configuração padrão, compartilhada entre o content script e o popup.
+// Configuração padrão, compartilhada entre o content script e as páginas da extensão.
+// A extensão só bloqueia vídeos com o rótulo oficial do YouTube ("Criado com IA")
+// e canais da lista de bloqueio.
 // eslint-disable-next-line no-unused-vars
 const AIB_DEFAULTS = {
   enabled: true,
   // "hide" = some da página | "blur" = desfoca com aviso e botão para revelar
   mode: "hide",
-  // Usa o rótulo oficial do YouTube ("Criado com IA" / conteúdo alterado ou sintético)
-  useOfficialLabel: true,
   // Consulta o rótulo oficial também para as miniaturas dos feeds (faz uma
   // requisição ao YouTube por vídeo, com cache)
   checkLabelInFeeds: true,
-  // Quando um vídeo tiver o rótulo oficial, adiciona o canal à lista de bloqueio
+  // Adiciona o canal à lista de bloqueio quando ele tiver MAIS de
+  // autoBlockThreshold vídeos diferentes com o rótulo oficial de IA
   autoBlockChannels: true,
+  autoBlockThreshold: 10,
   // Mostra uma tela de bloqueio ao abrir um vídeo/Short detectado como IA
   blockWatchPage: true,
-  // Também bloqueia títulos com "AI", "Ai" ou "IA" soltos (pega mais vídeos,
-  // mas também bloqueia vídeos que só falam sobre IA)
-  strictMode: true,
-  keywords: [
-    "gerado por IA",
-    "gerada por IA",
-    "gerados por IA",
-    "feito com IA",
-    "feito por IA",
-    "feitos com IA",
-    "criado com IA",
-    "criado por IA",
-    "vídeo de IA",
-    "video de IA",
-    "vídeos de IA",
-    "videos de IA",
-    "vídeo com IA",
-    "vídeos com IA",
-    "videos com IA",
-    "música IA",
-    "música de IA",
-    "IA generativa",
-    "#ia",
-    "#iagenerativa",
-    "AI generated",
-    "AI-generated",
-    "made with AI",
-    "AI video",
-    "AI videos",
-    "AI art",
-    "AI music",
-    "AI song",
-    "AI animation",
-    "AI animated",
-    "AI cartoon",
-    "AI short film",
-    "AI story",
-    "AI storytelling",
-    "AI baby",
-    "AI slop",
-    "#ai",
-    "#aiart",
-    "#aivideo",
-    "#aivideos",
-    "#aigenerated",
-    "#aimusic",
-    "#aishorts",
-    "#aishort",
-    "#aianimation",
-    "#aicat",
-    "#aicats",
-    "#aibaby",
-    "#aistory",
-    "#aicartoon",
-    "#aifilm",
-    "#sora",
-    "#sora2",
-    "#veo3",
-    "Sora 2",
-    "Sora AI",
-    "OpenAI Sora",
-    "Veo 3",
-    "Veo3",
-    "Google Veo",
-    "Seedance",
-    "Midjourney",
-    "Stable Diffusion",
-    "Kling AI",
-    "Hailuo",
-    "Runway Gen",
-    "Suno AI",
-    "Udio",
-    "deepfake",
-    "deepfakes"
-  ],
   // Canais bloqueados: "@handle" ou o nome exibido do canal
   blockedChannels: [],
   // Canais que nunca serão bloqueados (evita falsos positivos)
-  allowedChannels: []
+  allowedChannels: [],
+  // IDs de vídeos liberados à mão (falsos positivos)
+  allowedVideos: []
 };
+
+// Limite do histórico de vídeos bloqueados (os mais antigos saem primeiro)
+// eslint-disable-next-line no-unused-vars
+const AIB_HISTORY_MAX = 1000;
 
 // Artigo de ajuda do YouTube ligado ao rótulo "Criado com IA".
 // Outros rótulos da mesma seção (ex.: dublagem automática) usam outro artigo.

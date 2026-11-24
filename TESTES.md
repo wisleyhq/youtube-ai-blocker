@@ -1,7 +1,11 @@
 # Testes de identificação (23/11/2026)
 
-O `content.js` foi injetado em páginas reais do YouTube (navegador Chromium, com
-uma simulação da API `browser.storage`) para medir a detecção.
+As seções 1 a 5 testaram as versões 1.0.0 e 1.1.0, que também bloqueavam por
+palavras-chave e "modo rigoroso". A partir da versão 1.2.0 (seção 6) a extensão
+só bloqueia pelo selo oficial "Criado com IA" do YouTube.
+
+Nas seções 1 a 4, o `content.js` foi injetado em páginas reais do YouTube
+(navegador Chromium, com uma simulação da API `browser.storage`).
 
 ## 1. Busca "#aivideo" (só palavras-chave, versão 1.0.0)
 
@@ -73,8 +77,31 @@ verdade (automatizado com Puppeteer via WebDriver BiDi, perfil limpo).
 - O painel (popup) não pôde ser testado de forma automática: o Firefox não
   deixa a automação abrir páginas `moz-extension://`. Conferir à mão.
 
+## 6. Versão 1.2.0: só o selo oficial (Firefox 160, 23/11/2026)
+
+Palavras-chave e modo rigoroso foram removidos. Testes no Firefox real, como na seção 5.
+
+- **Páginas de vídeo:** os mesmos 7 vídeos da seção 2 deram 7 de 7 corretos.
+  "Assistir mesmo assim" continua funcionando.
+- **Busca "#aivideo":** 30 de 59 cartões marcados, todos com o selo
+  declarado pelo criador. Na 1.1.0 eram 99 de 107, a maioria só pelo título.
+- **Busca "receita bolo de cenoura":** 2 de 64, os dois com o selo.
+- **Histórico de vídeos:** 23 de 23 registros com título e canal, inclusive
+  Shorts da busca, cujo canal não aparece na página. O canal vem da consulta ao YouTube.
+- **Contagem por canal:** com o limite reduzido para 1 numa cópia de teste,
+  foram bloqueados exatamente os 3 canais com 2 vídeos com selo. Nenhum canal
+  com 1 vídeo foi bloqueado. Com o padrão (10), o canal precisa de 11 vídeos.
+- **Vídeo liberado:** um vídeo com selo, colocado em "Vídeos liberados", não
+  mostrou a tela de bloqueio.
+- **Página "Vídeos e canais bloqueados":** testada com dados simulados
+  (o Firefox não deixa a automação abrir páginas `moz-extension://`). Liberar
+  vídeo, bloquear, desbloquear e permitir canal funcionaram, sem rolagem
+  lateral em tela de celular.
+- **`web-ext lint`:** 0 erros, 0 avisos.
+
 ## Limitações
 
-- Vídeos de IA sem rótulo, sem palavra-chave e de canal desconhecido passam.
-- O modo rigoroso bloqueia também vídeos que só falam sobre IA (notícias,
-  tutoriais). Desative no painel ou use "Canais sempre permitidos".
+- Vídeos de IA que o criador não declarou não têm selo e passam (exceto se o
+  canal estiver bloqueado).
+- A contagem de vídeos por canal só inclui vídeos vistos com a extensão
+  ligada. Ainda não existe lista compartilhada entre usuários.
